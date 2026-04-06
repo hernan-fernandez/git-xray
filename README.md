@@ -20,16 +20,14 @@ git-xray analyzes your git history and produces a self-contained HTML report wit
 ## Quick Start
 
 ```bash
-# Install dependencies and build
-npm install
-npm run build
-
 # Run against the current repo
 npx git-xray
 
 # Run against a specific repo
 npx git-xray /path/to/repo
 ```
+
+That's it. No install needed — `npx` downloads and runs it automatically.
 
 This generates a report file like `aws-cdk-examples-2026-04-06.html` (opens automatically in your browser) and prints a terminal summary. Each run gets a unique filename based on the repo name and date.
 
