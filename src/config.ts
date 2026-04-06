@@ -1,4 +1,4 @@
-// git-wrapped configuration and flag parsing
+// git-xray configuration and flag parsing
 
 export interface GitPeekConfig {
   repoPath: string;
@@ -25,7 +25,7 @@ const KNOWN_FLAGS = new Set([
   '--follow-renames',
 ]);
 
-const HELP_TEXT = `Usage: git-wrapped [options] [path]
+const HELP_TEXT = `Usage: git-xray [options] [path]
 
 Analyze a git repository and generate a visual stats report.
 

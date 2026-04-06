@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// git-wrapped CLI entry point
+// git-xray CLI entry point
 
 import { parseConfig, ConfigError } from './config.js';
 import { validate } from './validator.js';

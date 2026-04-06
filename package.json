@@ -1,10 +1,10 @@
 {
-  "name": "git-wrapped",
+  "name": "git-xray",
   "version": "0.1.0",
-  "description": "CLI tool that generates beautiful, shareable visual reports of git repository statistics. Spotify Wrapped for your git repos.",
+  "description": "CLI tool that generates beautiful, shareable visual reports of git repository statistics. X-ray your codebase.",
   "type": "module",
   "bin": {
-    "git-wrapped": "./dist/cli.js"
+    "git-xray": "./dist/cli.js"
   },
   "main": "./dist/cli.js",
   "files": [
@@ -38,11 +38,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hernan-fernandez/git-wrapped"
+    "url": "https://github.com/hernan-fernandez/git-xray"
   },
-  "homepage": "https://github.com/hernan-fernandez/git-wrapped#readme",
+  "homepage": "https://github.com/hernan-fernandez/git-xray#readme",
   "bugs": {
-    "url": "https://github.com/hernan-fernandez/git-wrapped/issues"
+    "url": "https://github.com/hernan-fernandez/git-xray/issues"
   },
   "author": "hernan-fernandez",
   "dependencies": {

@@ -3,7 +3,7 @@ import { parseConfig, ConfigError } from '../../src/config.js';
 
 // Helper: simulate process.argv with node + script prefix
 function argv(...args: string[]): string[] {
-  return ['node', 'git-wrapped', ...args];
+  return ['node', 'git-xray', ...args];
 }
 
 describe('parseConfig', () => {
@@ -104,7 +104,7 @@ describe('parseConfig', () => {
     try {
       parseConfig(argv('--foo'));
     } catch (e) {
-      expect((e as Error).message).toContain('Usage: git-wrapped');
+      expect((e as Error).message).toContain('Usage: git-xray');
     }
   });
 });

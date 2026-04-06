@@ -1,10 +1,10 @@
-# 📊 git-wrapped
+# 🔍 git-xray
 
-A CLI tool that generates beautiful, shareable visual reports of git repository statistics. Think "Spotify Wrapped" for your git repos.
+A CLI tool that generates beautiful, shareable visual reports of git repository statistics. X-ray your codebase to see what's really going on.
 
-git-wrapped analyzes your git history and produces a self-contained HTML report with interactive charts, fun awards, shareable stats, and a formatted terminal summary — no configuration required.
+git-xray analyzes your git history and produces a self-contained HTML report with interactive charts, fun awards, shareable stats, and a formatted terminal summary — no configuration required.
 
-![git-wrapped demo](demo.gif)
+![git-xray demo](demo.gif)
 
 ## What You Get
 
@@ -25,10 +25,10 @@ npm install
 npm run build
 
 # Run against the current repo
-npx git-wrapped
+npx git-xray
 
 # Run against a specific repo
-npx git-wrapped /path/to/repo
+npx git-xray /path/to/repo
 ```
 
 This generates a report file like `aws-cdk-examples-2026-04-06.html` (opens automatically in your browser) and prints a terminal summary. Each run gets a unique filename based on the repo name and date.
@@ -36,7 +36,7 @@ This generates a report file like `aws-cdk-examples-2026-04-06.html` (opens auto
 ## Usage
 
 ```
-git-wrapped [options] [path]
+git-xray [options] [path]
 ```
 
 ### Options
@@ -57,16 +57,16 @@ git-wrapped [options] [path]
 
 ```bash
 # Analyze the last year on the main branch
-npx git-wrapped --since 2025-01-01 --branch main
+npx git-xray --since 2025-01-01 --branch main
 
 # Focus on the src/ directory, export JSON too
-npx git-wrapped --scope src/ --json
+npx git-xray --scope src/ --json
 
 # Custom output path, no browser auto-open
-npx git-wrapped --output ~/reports/my-project.html --no-open
+npx git-xray --output ~/reports/my-project.html --no-open
 
 # Track file renames for more accurate hotspot detection
-npx git-wrapped --follow-renames
+npx git-xray --follow-renames
 ```
 
 ## Output
@@ -110,7 +110,7 @@ This keeps the risk list focused on files that actually matter.
 
 - **Node.js** 18+
 - **git** installed and on your PATH
-- The target repository must be cloned locally (git-wrapped reads the `.git` directory)
+- The target repository must be cloned locally (git-xray reads the `.git` directory)
 
 ## Development
 
@@ -132,9 +132,9 @@ The test suite includes 241 tests: unit tests for all modules plus 20 property-b
 
 ## How It Works
 
-git-wrapped streams raw git command output through Node.js Transform streams, keeping memory usage low even on large repositories. It runs five analysis phases sequentially — if any phase fails, it's skipped gracefully and the rest continue.
+git-xray streams raw git command output through Node.js Transform streams, keeping memory usage low even on large repositories. It runs five analysis phases sequentially — if any phase fails, it's skipped gracefully and the rest continue.
 
-All analysis is read-only. git-wrapped never modifies your working tree, index, or HEAD.
+All analysis is read-only. git-xray never modifies your working tree, index, or HEAD.
 
 ## License
 

@@ -256,7 +256,7 @@ export function renderTerminalReport(reportData: ReportData, noColor: boolean): 
 
   // Title
   lines.push('');
-  lines.push(chalk.bold.white(`  git-wrapped report: ${reportData.repoName}`));
+  lines.push(chalk.bold.white(`  git-xray report: ${reportData.repoName}`));
   lines.push(chalk.dim(`  Branch: ${reportData.analyzedBranch}`));
   lines.push(chalk.dim(`  Period: ${reportData.dateRange.from.toISOString().slice(0, 10)} → ${reportData.dateRange.to.toISOString().slice(0, 10)}`));
 
