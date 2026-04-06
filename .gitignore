@@ -1,6 +1,7 @@
 node_modules/
 dist/
 *.html
+!sample/*.html
 *.json
 !package.json
 !package-lock.json

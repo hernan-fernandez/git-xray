@@ -4,7 +4,9 @@ A CLI tool that generates beautiful, shareable visual reports of git repository 
 
 git-xray analyzes your git history and produces a self-contained HTML report with interactive charts, fun awards, shareable stats, and a formatted terminal summary — no configuration required.
 
-![git-xray demo](demo.gif)
+![git-xray demo](images/demo.gif)
+
+[🔍 See a live demo report](https://hernan-fernandez.github.io/git-xray/)
 
 ## What You Get
 
