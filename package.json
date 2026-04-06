@@ -1,0 +1,37 @@
+{
+  "name": "gitpeek",
+  "version": "0.1.0",
+  "description": "CLI tool that generates beautiful, shareable visual reports of git repository statistics",
+  "type": "module",
+  "bin": {
+    "gitpeek": "./dist/cli.js"
+  },
+  "main": "./dist/cli.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "start": "node dist/cli.js"
+  },
+  "keywords": [
+    "git",
+    "stats",
+    "report",
+    "cli",
+    "visualization"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "echarts": "^6.0.0",
+    "ink": "^6.8.0",
+    "p-limit": "^7.3.0",
+    "react": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "@types/react": "^19.2.14",
+    "fast-check": "^4.6.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}
