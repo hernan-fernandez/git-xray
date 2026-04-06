@@ -4,6 +4,8 @@ A CLI tool that generates beautiful, shareable visual reports of git repository 
 
 git-wrapped analyzes your git history and produces a self-contained HTML report with interactive charts, fun awards, shareable stats, and a formatted terminal summary — no configuration required.
 
+![git-wrapped demo](demo.gif)
+
 ## What You Get
 
 - **Summary Card** — key stats at a glance with fun awards (Top Contributor, Code Machine, Cleanup Crew, Hottest File, Busiest Day)
