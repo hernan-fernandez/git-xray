@@ -69,8 +69,11 @@ export function parseNameStatusOutput(raw: string): NameStatusCommit[] {
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) {
-      // Blank line — finalize current commit if any
-      if (current) {
+      // Blank line — only finalize if the current commit has files.
+      // git log --name-status --format="%H" produces a blank line
+      // between the hash and the file entries, so we skip blank lines
+      // when the current commit has no files yet.
+      if (current && current.files.length > 0) {
         commits.push(current);
         current = null;
       }
@@ -175,6 +178,14 @@ function openInBrowser(filePath: string): void {
 export async function runAnalysis(config: GitPeekConfig): Promise<void> {
   const gitRunner: GitRunner = new GitCommandRunner(config.repoPath);
   const filters = buildFilters(config);
+  const repoName = basename(config.repoPath);
+
+  // Resolve output path: if not specified, generate a unique default
+  if (!config.output) {
+    const date = new Date().toISOString().slice(0, 10);
+    const safeName = repoName.replace(/[^a-zA-Z0-9_-]/g, '-');
+    config.output = `./${safeName}-${date}.html`;
+  }
 
   let commits: CommitRecord[] = [];
   let fileChanges: FileChangeRecord[] = [];

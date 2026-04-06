@@ -3,14 +3,14 @@ import { parseConfig, ConfigError } from '../../src/config.js';
 
 // Helper: simulate process.argv with node + script prefix
 function argv(...args: string[]): string[] {
-  return ['node', 'gitpeek', ...args];
+  return ['node', 'git-wrapped', ...args];
 }
 
 describe('parseConfig', () => {
   it('returns defaults when no flags are provided', () => {
     const config = parseConfig(argv());
     expect(config.repoPath).toBe(process.cwd());
-    expect(config.output).toBe('./gitpeek-report.html');
+    expect(config.output).toBe('');
     expect(config.followRenames).toBe(false);
     expect(config.noOpen).toBe(false);
     expect(config.noColor).toBe(false);
@@ -104,7 +104,7 @@ describe('parseConfig', () => {
     try {
       parseConfig(argv('--foo'));
     } catch (e) {
-      expect((e as Error).message).toContain('Usage: gitpeek');
+      expect((e as Error).message).toContain('Usage: git-wrapped');
     }
   });
 });

@@ -1,14 +1,20 @@
 {
-  "name": "gitpeek",
+  "name": "git-wrapped",
   "version": "0.1.0",
-  "description": "CLI tool that generates beautiful, shareable visual reports of git repository statistics",
+  "description": "CLI tool that generates beautiful, shareable visual reports of git repository statistics. Spotify Wrapped for your git repos.",
   "type": "module",
   "bin": {
-    "gitpeek": "./dist/cli.js"
+    "git-wrapped": "./dist/cli.js"
   },
   "main": "./dist/cli.js",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && rm -rf dist/report/template && cp -r src/report/template dist/report/template",
+    "prepublishOnly": "npm run build",
     "test": "vitest --run",
     "test:watch": "vitest",
     "start": "node dist/cli.js"
@@ -18,9 +24,27 @@
     "stats",
     "report",
     "cli",
-    "visualization"
+    "visualization",
+    "wrapped",
+    "analytics",
+    "bus-factor",
+    "contributors",
+    "hotspots",
+    "complexity"
   ],
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hernan-fernandez/git-wrapped"
+  },
+  "homepage": "https://github.com/hernan-fernandez/git-wrapped#readme",
+  "bugs": {
+    "url": "https://github.com/hernan-fernandez/git-wrapped/issues"
+  },
+  "author": "hernan-fernandez",
   "dependencies": {
     "echarts": "^6.0.0",
     "ink": "^6.8.0",

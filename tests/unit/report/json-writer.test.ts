@@ -31,7 +31,7 @@ function makeReport(perDirEntries?: [string, BusFactorResult][]) {
   const busFactor: BusFactorData = {
     overall: { scope: 'overall', busFactor: 2, topAuthors: [] },
     perDirectory,
-    singlePointRisks: ['lonely-file.ts'],
+    singlePointRisks: [{ filePath: 'lonely-file.ts', soleAuthor: 'Alice', totalChanges: 3, authorPercentage: 100, firstSeen: '2024-01-01T00:00:00.000Z', lastSeen: '2024-06-01T00:00:00.000Z', spanMonths: 5 }],
   };
   const prVelocity: PRVelocityData = {
     available: true,
@@ -125,7 +125,8 @@ describe('writeJsonReport', () => {
 
     expect(parsed.hotspots.hotspots).toHaveLength(1);
     expect(parsed.contributions.authors).toHaveLength(1);
-    expect(parsed.busFactor.singlePointRisks).toEqual(['lonely-file.ts']);
+    expect(parsed.busFactor.singlePointRisks).toHaveLength(1);
+    expect(parsed.busFactor.singlePointRisks[0].filePath).toBe('lonely-file.ts');
   });
 
   it('should handle empty perDirectory Map', async () => {

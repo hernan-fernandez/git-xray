@@ -8,10 +8,19 @@ export interface BusFactorResult {
         weightedCommits: number;
     }[];
 }
+export interface SinglePointRisk {
+    filePath: string;
+    soleAuthor: string;
+    totalChanges: number;
+    authorPercentage: number;
+    firstSeen: string;
+    lastSeen: string;
+    spanMonths: number;
+}
 export interface BusFactorData {
     overall: BusFactorResult;
     perDirectory: Map<string, BusFactorResult>;
-    singlePointRisks: string[];
+    singlePointRisks: SinglePointRisk[];
 }
 /**
  * Analyze bus factor for the repository.

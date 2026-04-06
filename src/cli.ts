@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// gitpeek CLI entry point
+// git-wrapped CLI entry point
 
 import { parseConfig, ConfigError } from './config.js';
 import { validate } from './validator.js';

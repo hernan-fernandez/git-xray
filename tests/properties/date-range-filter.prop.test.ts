@@ -43,7 +43,7 @@ describe('Property 18: Date range filtering correctness', () => {
         const sinceStr = since.toISOString();
         const untilStr = until.toISOString();
 
-        const config = parseConfig(['node', 'gitpeek', '--since', sinceStr, '--until', untilStr]);
+        const config = parseConfig(['node', 'git-wrapped', '--since', sinceStr, '--until', untilStr]);
 
         expect(config.since).toBeInstanceOf(Date);
         expect(config.until).toBeInstanceOf(Date);

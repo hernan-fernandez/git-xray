@@ -113,7 +113,7 @@
 
 ## Task 19: Integration and Polish
 
-- [-] 19.1 Wire up `src/cli.ts` as the `bin` entry point; verify `npx gitpeek` invocation works end-to-end on a sample repository
-- [~] 19.2 Add auto-open behavior (open HTML report in default browser unless `--no-open`); implement `--json` flag to write JSON alongside HTML
-- [~] 19.3 Add the large-repo warning for `--follow-renames` when repository has >5,000 commits (Requirement 3.5)
-- [~] 19.4 Final end-to-end smoke test: run against a real repository, verify HTML report opens, terminal output renders, JSON output is valid
+- [x] 19.1 Wire up `src/cli.ts` as the `bin` entry point; verify `npx gitpeek` invocation works end-to-end on a sample repository
+- [x] 19.2 Add auto-open behavior (open HTML report in default browser unless `--no-open`); implement `--json` flag to write JSON alongside HTML
+- [x] 19.3 Add the large-repo warning for `--follow-renames` when repository has >5,000 commits (Requirement 3.5)
+- [x] 19.4 Final end-to-end smoke test: run against a real repository, verify HTML report opens, terminal output renders, JSON output is valid

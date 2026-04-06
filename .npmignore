@@ -1,0 +1,11 @@
+src/
+tests/
+.kiro/
+.github/
+.gitignore
+tsconfig.json
+vitest.config.ts
+*.test.ts
+*.prop.test.ts
+*.html
+!dist/report/template/report.html

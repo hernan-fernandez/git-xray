@@ -201,7 +201,7 @@ function renderBusFactor(chalk: ChalkInstance, data: ReportData): string {
     lines.push('');
     lines.push(`  ${chalk.yellow('⚠')} Single-point-of-knowledge risks: ${chalk.bold(String(bf.singlePointRisks.length))} files`);
     for (const risk of bf.singlePointRisks.slice(0, 5)) {
-      lines.push(`    ${chalk.yellow('•')} ${risk}`);
+      lines.push(`    ${chalk.yellow('•')} ${risk.filePath} — ${risk.authorPercentage}% by ${risk.soleAuthor} over ${risk.spanMonths}mo`);
     }
     if (bf.singlePointRisks.length > 5) {
       lines.push(`    ... and ${bf.singlePointRisks.length - 5} more`);
@@ -256,7 +256,7 @@ export function renderTerminalReport(reportData: ReportData, noColor: boolean): 
 
   // Title
   lines.push('');
-  lines.push(chalk.bold.white(`  gitpeek report: ${reportData.repoName}`));
+  lines.push(chalk.bold.white(`  git-wrapped report: ${reportData.repoName}`));
   lines.push(chalk.dim(`  Branch: ${reportData.analyzedBranch}`));
   lines.push(chalk.dim(`  Period: ${reportData.dateRange.from.toISOString().slice(0, 10)} → ${reportData.dateRange.to.toISOString().slice(0, 10)}`));
 

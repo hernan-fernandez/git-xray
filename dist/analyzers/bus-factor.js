@@ -1,6 +1,24 @@
 // Bus factor calculation
 // Pure function: (commits, fileChanges, referenceDate) => BusFactorData
 import { timeDecayWeight, getAgeInMonths } from '../utils/time-decay.js';
+/** Minimum number of total changes for a file to be considered a real risk */
+const MIN_RISK_CHANGES = 2;
+/** File patterns that are boilerplate / config — not real knowledge silos */
+const BOILERPLATE_PATTERNS = [
+    /\.gitignore$/i, /\.npmignore$/i, /\.npmrc$/i, /\.eslintrc/i, /\.prettierrc/i,
+    /tsconfig(\.\w+)?\.json$/i, /cdk\.json$/i, /cdk\.context\.json$/i,
+    /package-lock\.json$/i, /\/package\.json$/i, /^package\.json$/i,
+    /go\.sum$/i, /go\.mod$/i, /requirements\.txt$/i, /requirements-dev\.txt$/i,
+    /pom\.xml$/i, /\.csproj$/i, /\.sln$/i,
+    /jest\.config\.(js|ts)$/i, /\.snap$/i, /\.gitattributes$/i,
+    /\.mergify\.yml$/i, /\.projen\//i, /LICENSE$/i, /NOTICE$/i,
+    /\.env\.example$/i, /buildspec\.yml$/i, /DO_NOT_AUTOTEST$/i,
+    /source\.bat$/i, /setup\.py$/i, /pyproject\.toml$/i,
+    /cdk\.out\.\w+\//i, /\.jar$/i, /\.png$/i, /\.jpg$/i, /\.svg$/i,
+];
+function isBoilerplate(filePath) {
+    return BOILERPLATE_PATTERNS.some(p => p.test(filePath));
+}
 /**
  * Compute bus factor for a given scope from weighted author commit counts.
  *
@@ -72,8 +90,28 @@ export function analyzeBusFactor(commits, fileChanges, referenceDate) {
     }
     // --- Single-point-of-knowledge risks ---
     // Files with exactly 1 distinct author in the last 12 months (relative to referenceDate)
+    // We collect rich context: who, how many changes, what percentage, time span
     const fileAuthors = new Map();
+    // Track all-time changes per file per author for percentage calculation
+    const fileAllTimeChanges = new Map();
     for (const fc of fileChanges) {
+        // Track all-time stats
+        let authorStats = fileAllTimeChanges.get(fc.filePath);
+        if (!authorStats) {
+            authorStats = new Map();
+            fileAllTimeChanges.set(fc.filePath, authorStats);
+        }
+        let stat = authorStats.get(fc.author);
+        if (!stat) {
+            stat = { count: 0, earliest: fc.date, latest: fc.date };
+            authorStats.set(fc.author, stat);
+        }
+        stat.count++;
+        if (fc.date.getTime() < stat.earliest.getTime())
+            stat.earliest = fc.date;
+        if (fc.date.getTime() > stat.latest.getTime())
+            stat.latest = fc.date;
+        // Track recent authors (last 12 months)
         const ageMonths = getAgeInMonths(fc.date, referenceDate);
         if (ageMonths <= 12) {
             let authors = fileAuthors.get(fc.filePath);
@@ -87,10 +125,32 @@ export function analyzeBusFactor(commits, fileChanges, referenceDate) {
     const singlePointRisks = [];
     for (const [filePath, authors] of fileAuthors) {
         if (authors.size === 1) {
-            singlePointRisks.push(filePath);
+            const allTimeStats = fileAllTimeChanges.get(filePath);
+            const totalChanges = allTimeStats
+                ? Array.from(allTimeStats.values()).reduce((sum, s) => sum + s.count, 0)
+                : 0;
+            // Filter out low-signal risks: single-change files and boilerplate
+            if (totalChanges < MIN_RISK_CHANGES || isBoilerplate(filePath))
+                continue;
+            const soleAuthor = Array.from(authors)[0];
+            const authorStat = allTimeStats?.get(soleAuthor);
+            const authorChanges = authorStat?.count ?? 0;
+            const authorPercentage = totalChanges > 0 ? Math.round((authorChanges / totalChanges) * 100) : 100;
+            const earliest = authorStat?.earliest ?? referenceDate;
+            const latest = authorStat?.latest ?? referenceDate;
+            const spanMonths = Math.max(0, Math.round(getAgeInMonths(earliest, latest)));
+            singlePointRisks.push({
+                filePath,
+                soleAuthor,
+                totalChanges,
+                authorPercentage,
+                firstSeen: earliest.toISOString(),
+                lastSeen: latest.toISOString(),
+                spanMonths,
+            });
         }
     }
-    singlePointRisks.sort();
+    singlePointRisks.sort((a, b) => b.authorPercentage - a.authorPercentage || b.totalChanges - a.totalChanges);
     return { overall, perDirectory, singlePointRisks };
 }
 //# sourceMappingURL=bus-factor.js.map

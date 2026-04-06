@@ -127,8 +127,9 @@ describe('analyzeBusFactor', () => {
 
   it('detects single-point-of-knowledge risks (files with 1 author in last 12 months)', () => {
     const fileChanges = [
-      // src/solo.ts: only Alice in last 12 months → risk
+      // src/solo.ts: only Alice in last 12 months, 2+ changes → risk
       makeFileChange({ commitHash: 'a1', author: 'Alice', filePath: 'src/solo.ts', date: new Date('2024-03-01T00:00:00Z') }),
+      makeFileChange({ commitHash: 'a1b', author: 'Alice', filePath: 'src/solo.ts', date: new Date('2024-04-01T00:00:00Z') }),
       // src/shared.ts: Alice and Bob in last 12 months → not a risk
       makeFileChange({ commitHash: 'a2', author: 'Alice', filePath: 'src/shared.ts', date: new Date('2024-03-01T00:00:00Z') }),
       makeFileChange({ commitHash: 'b1', author: 'Bob', filePath: 'src/shared.ts', date: new Date('2024-04-01T00:00:00Z') }),
@@ -136,22 +137,32 @@ describe('analyzeBusFactor', () => {
 
     const result = analyzeBusFactor([], fileChanges, REF_DATE);
 
-    expect(result.singlePointRisks).toContain('src/solo.ts');
-    expect(result.singlePointRisks).not.toContain('src/shared.ts');
+    const riskPaths = result.singlePointRisks.map(r => r.filePath);
+    expect(riskPaths).toContain('src/solo.ts');
+    expect(riskPaths).not.toContain('src/shared.ts');
+
+    const soloRisk = result.singlePointRisks.find(r => r.filePath === 'src/solo.ts')!;
+    expect(soloRisk.soleAuthor).toBe('Alice');
+    expect(soloRisk.authorPercentage).toBe(100);
+    expect(soloRisk.totalChanges).toBe(2);
   });
 
   it('excludes old commits from single-point-of-knowledge detection', () => {
     const fileChanges = [
       // Old commit (> 12 months before ref) by Alice
       makeFileChange({ commitHash: 'a1', author: 'Alice', filePath: 'src/old.ts', date: new Date('2022-01-01T00:00:00Z') }),
-      // Recent commit by Bob
+      // Recent commits by Bob (2 changes so it passes min-changes filter)
       makeFileChange({ commitHash: 'b1', author: 'Bob', filePath: 'src/old.ts', date: new Date('2024-05-01T00:00:00Z') }),
+      makeFileChange({ commitHash: 'b2', author: 'Bob', filePath: 'src/old.ts', date: new Date('2024-05-15T00:00:00Z') }),
     ];
 
     const result = analyzeBusFactor([], fileChanges, REF_DATE);
 
-    // Only Bob in last 12 months → single point risk
-    expect(result.singlePointRisks).toContain('src/old.ts');
+    const riskPaths = result.singlePointRisks.map(r => r.filePath);
+    expect(riskPaths).toContain('src/old.ts');
+
+    const oldRisk = result.singlePointRisks.find(r => r.filePath === 'src/old.ts')!;
+    expect(oldRisk.soleAuthor).toBe('Bob');
   });
 
   it('applies time-decay weighting to older commits', () => {

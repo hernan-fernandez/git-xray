@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>gitpeek Report</title>
+<title>git-wrapped Report</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.6}
@@ -12,8 +12,7 @@ header{text-align:center;padding:32px 0;border-bottom:1px solid #21262d;margin-b
 header h1{font-size:2rem;color:#58a6ff;margin-bottom:8px}
 header .meta{font-size:0.9rem;color:#8b949e}
 .section{margin-bottom:40px}
-.section h2{font-size:1.4rem;color:#58a6ff;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #21262d}
-.chart-container{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:16px;margin-bottom:16px}
+.section h2{font-size:1.4rem;color:#58a6ff;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #21262d}.chart-container{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:16px;margin-bottom:16px}
 .chart{width:100%;height:400px}
 .chart-half{width:100%;height:350px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -24,19 +23,68 @@ table.dir-table{width:100%;border-collapse:collapse;margin-top:16px}
 table.dir-table th,table.dir-table td{padding:8px 12px;text-align:left;border-bottom:1px solid #21262d}
 table.dir-table th{color:#8b949e;font-weight:600;font-size:0.85rem;text-transform:uppercase}
 table.dir-table td{color:#c9d1d9}
-.risk-list{margin-top:12px;padding-left:20px}
-.risk-list li{color:#f85149;font-size:0.9rem;margin-bottom:4px}
+.risk-list{margin-top:12px;padding-left:0;list-style:none}
+.risk-list li{color:#c9d1d9;font-size:0.9rem;margin-bottom:0;border:1px solid #21262d;border-radius:6px;overflow:hidden}
+.risk-list li+li{margin-top:6px}
+.risk-header{padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.15s}
+.risk-header:hover{background:#1c2028}
+.risk-header .risk-arrow{transition:transform 0.2s;color:#8b949e;font-size:0.7rem}
+.risk-header.open .risk-arrow{transform:rotate(90deg)}
+.risk-header .risk-file{flex:1;color:#f85149;font-family:monospace;font-size:0.85rem}
+.risk-header .risk-badge{background:#f8514920;color:#f85149;padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:600}
+.risk-detail{display:none;padding:0 14px 12px 30px;font-size:0.85rem;color:#8b949e;line-height:1.7}
+.risk-detail.open{display:block}
+.risk-detail strong{color:#c9d1d9}
+.risk-group{border:1px solid #21262d;border-radius:8px;overflow:hidden;margin-bottom:8px}
+.risk-group-header{padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;background:#161b22;transition:background 0.15s}
+.risk-group-header:hover{background:#1c2028}
+.risk-group-header .risk-arrow{transition:transform 0.2s;color:#8b949e;font-size:0.7rem}
+.risk-group-header.open .risk-arrow{transform:rotate(90deg)}
+.risk-group-header .risk-dir{flex:1;color:#58a6ff;font-family:monospace;font-size:0.9rem;font-weight:600}
+.risk-group-header .risk-count{color:#8b949e;font-size:0.8rem}
+.risk-group-header .risk-badge{background:#f8514920;color:#f85149;padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:600}
+.risk-group-body{display:none;border-top:1px solid #21262d}
+.risk-group-body.open{display:block}
+.risk-group-body .risk-list{margin:0;border-radius:0}
+.risk-group-body .risk-list li{border-radius:0;border-left:0;border-right:0;border-top:0}
+.risk-group-body .risk-list li:last-child{border-bottom:0}
+.risk-filter-bar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.risk-filter-bar span{color:#8b949e;font-size:0.85rem}
+.risk-filter-bar .filter-count{color:#c9d1d9;font-weight:600}
 .warning{background:#1c1206;border:1px solid #bb8009;border-radius:6px;padding:12px 16px;color:#e3b341;margin-bottom:16px;font-size:0.9rem}
 footer{text-align:center;padding:24px 0;border-top:1px solid #21262d;margin-top:32px;color:#8b949e;font-size:0.85rem}
+.summary-card{background:linear-gradient(135deg,#161b22 0%,#1a2332 50%,#161b22 100%);border:1px solid #30363d;border-radius:16px;padding:32px;margin-bottom:40px;position:relative;overflow:hidden}
+.summary-card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(88,166,255,0.03) 0%,transparent 70%);pointer-events:none}
+.summary-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:24px;text-align:center;margin-bottom:24px}
+.stat-item .stat-value{font-size:2.2rem;font-weight:bold;color:#58a6ff;line-height:1.2}
+.stat-item .stat-label{font-size:0.8rem;color:#8b949e;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px}
+.awards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:24px}
+.award{background:#0d1117;border:1px solid #21262d;border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:12px;transition:border-color 0.2s}
+.award:hover{border-color:#58a6ff}
+.award .award-icon{font-size:1.8rem;flex-shrink:0}
+.award .award-text{flex:1}
+.award .award-title{font-size:0.75rem;color:#8b949e;text-transform:uppercase;letter-spacing:0.5px}
+.award .award-value{font-size:0.95rem;color:#c9d1d9;font-weight:500;margin-top:2px}
+.share-bar{display:flex;justify-content:center;gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid #21262d}
+.share-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;border:1px solid #30363d;background:#161b22;color:#c9d1d9;font-size:0.85rem;cursor:pointer;text-decoration:none;transition:all 0.2s}
+.share-btn:hover{border-color:#58a6ff;color:#58a6ff;background:#0d1117}
+.share-btn.twitter{border-color:#1d9bf0;color:#1d9bf0}
+.share-btn.twitter:hover{background:#1d9bf015}
 @media(max-width:768px){.grid-2{grid-template-columns:1fr}.chart{height:300px}.chart-half{height:280px}}
 </style>
 </head>
 <body>
 <div class="container">
 <header>
-<h1>📊 gitpeek Report</h1>
+<h1>📊 git-wrapped Report</h1>
 <div class="meta" id="report-meta"></div>
 </header>
+
+<div class="summary-card" id="summary-card">
+<div class="summary-stats" id="summary-stats"></div>
+<div class="awards" id="awards"></div>
+<div class="share-bar" id="share-bar"></div>
+</div>
 
 <section class="section">
 <h2>👥 Top Contributors</h2>
@@ -81,8 +129,10 @@ footer{text-align:center;padding:24px 0;border-top:1px solid #21262d;margin-top:
 <tbody></tbody>
 </table>
 <div id="risk-section" style="display:none">
-<h3 style="color:#f85149;margin-top:16px;font-size:1rem">⚠️ Single-Point-of-Knowledge Risks</h3>
-<ul class="risk-list" id="risk-list"></ul>
+<h3 style="color:#f85149;margin-top:16px;font-size:1rem;display:flex;align-items:center;gap:12px">⚠️ Single-Point-of-Knowledge Risks <button id="export-risks-csv" class="share-btn" style="font-size:0.75rem;padding:4px 12px;margin:0">📥 Export CSV</button></h3>
+<div class="risk-filter-bar" id="risk-filter-info"></div>
+<div id="risk-groups"></div>
+<ul class="risk-list" id="risk-list" style="display:none"></ul>
 </div>
 </div>
 </section>
@@ -96,7 +146,7 @@ footer{text-align:center;padding:24px 0;border-top:1px solid #21262d;margin-top:
 </section>
 
 <footer>
-Generated by <strong>gitpeek</strong> &mdash; <span id="generated-at"></span>
+Generated by <strong>git-wrapped</strong> &mdash; <span id="generated-at"></span>
 </footer>
 </div>
 
@@ -123,6 +173,95 @@ Generated by <strong>gitpeek</strong> &mdash; <span id="generated-at"></span>
   }
   var genAt = document.getElementById('generated-at');
   if (genAt) genAt.textContent = new Date(data.generatedAt).toLocaleString();
+
+  // Summary Card
+  var statsEl = document.getElementById('summary-stats');
+  if (statsEl) {
+    var stats = [
+      { value: data.contributions.totalCommits.toLocaleString(), label: 'Total Commits' },
+      { value: data.contributions.authors.length, label: 'Contributors' },
+      { value: data.hotspots.hotspots.length.toLocaleString(), label: 'Files Tracked' },
+      { value: data.busFactor.overall.busFactor, label: 'Bus Factor' },
+    ];
+    if (data.prVelocity.available && data.prVelocity.averageMergeTime) {
+      var days = (data.prVelocity.averageMergeTime / 86400000).toFixed(1);
+      stats.push({ value: days + 'd', label: 'Avg Merge Time' });
+    }
+    if (data.prVelocity.available) {
+      stats.push({ value: data.prVelocity.totalMerges, label: 'Total Merges' });
+    }
+    stats.forEach(function(s) {
+      var div = document.createElement('div');
+      div.className = 'stat-item';
+      div.innerHTML = '<div class="stat-value">' + s.value + '</div><div class="stat-label">' + s.label + '</div>';
+      statsEl.appendChild(div);
+    });
+  }
+
+  // Awards
+  var awardsEl = document.getElementById('awards');
+  if (awardsEl) {
+    var awards = [];
+    var authors = data.contributions.authors;
+    if (authors.length > 0) {
+      var top = authors[0];
+      var isBot = top.name.toLowerCase().includes('bot');
+      awards.push({ icon: isBot ? '🤖' : '👑', title: isBot ? 'Bot Overlord' : 'Top Contributor', value: top.name + ' (' + top.commits + ' commits)' });
+      // Most lines added
+      var maxAdded = authors.slice().sort(function(a,b){return b.linesAdded-a.linesAdded;})[0];
+      if (maxAdded) awards.push({ icon: '✍️', title: 'Code Machine', value: maxAdded.name + ' (+' + maxAdded.linesAdded.toLocaleString() + ' lines)' });
+      // Most lines removed
+      var maxRemoved = authors.slice().sort(function(a,b){return b.linesRemoved-a.linesRemoved;})[0];
+      if (maxRemoved && maxRemoved.linesRemoved > 0) awards.push({ icon: '🧹', title: 'Cleanup Crew', value: maxRemoved.name + ' (-' + maxRemoved.linesRemoved.toLocaleString() + ' lines)' });
+    }
+    if (data.hotspots.hotspots.length > 0) {
+      var hottest = data.hotspots.hotspots[0];
+      awards.push({ icon: '🔥', title: 'Hottest File', value: hottest.filePath.split('/').pop() + ' (' + hottest.changeCount + ' changes)' });
+    }
+    if (data.busFactor.overall.busFactor <= 1) {
+      awards.push({ icon: '⚠️', title: 'Bus Factor Alert', value: 'Only 1 person holds the keys' });
+    } else if (data.busFactor.overall.busFactor >= 5) {
+      awards.push({ icon: '💪', title: 'Well Distributed', value: 'Bus factor of ' + data.busFactor.overall.busFactor + ' — healthy!' });
+    }
+    if (data.busFactor.singlePointRisks && data.busFactor.singlePointRisks.length > 0) {
+      var riskCount = data.busFactor.singlePointRisks.length;
+      var topRisk = typeof data.busFactor.singlePointRisks[0] === 'string' ? null : data.busFactor.singlePointRisks[0];
+      var riskDesc = riskCount + ' files with a single maintainer';
+      if (topRisk) riskDesc = riskCount + ' files — worst: ' + topRisk.authorPercentage + '% by ' + topRisk.soleAuthor;
+      awards.push({ icon: '🎯', title: 'Knowledge Silos', value: riskDesc });
+    }
+    // Find busiest day from heatmap
+    if (data.contributions.heatmap) {
+      var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      var daySums = data.contributions.heatmap.map(function(row){return row.reduce(function(a,b){return a+b;},0);});
+      var busiestDay = daySums.indexOf(Math.max.apply(null, daySums));
+      if (daySums[busiestDay] > 0) awards.push({ icon: '📅', title: 'Busiest Day', value: dayNames[busiestDay] + ' (' + daySums[busiestDay] + ' commits)' });
+    }
+    awards.forEach(function(a) {
+      var div = document.createElement('div');
+      div.className = 'award';
+      div.innerHTML = '<span class="award-icon">' + a.icon + '</span><div class="award-text"><div class="award-title">' + a.title + '</div><div class="award-value">' + a.value + '</div></div>';
+      awardsEl.appendChild(div);
+    });
+  }
+
+  // Share Button
+  var shareBar = document.getElementById('share-bar');
+  if (shareBar) {
+    var topName = (data.contributions.authors[0] || {}).name || 'unknown';
+    var tweetText = encodeURIComponent(
+      '📊 ' + data.repoName + ' git-wrapped:\n' +
+      '• ' + data.contributions.totalCommits + ' commits\n' +
+      '• ' + data.contributions.authors.length + ' contributors\n' +
+      '• Bus factor: ' + data.busFactor.overall.busFactor + '\n' +
+      '• Top contributor: ' + topName + '\n\n' +
+      'Generated with git-wrapped 🎁'
+    );
+    var tweetUrl = 'https://twitter.com/intent/tweet?text=' + tweetText;
+    shareBar.innerHTML =
+      '<a class="share-btn twitter" href="' + tweetUrl + '" target="_blank" rel="noopener">🐦 Share on X</a>' +
+      '<button class="share-btn" onclick="navigator.clipboard.writeText(window.location.href).then(function(){this.textContent=\'✓ Copied!\'}.bind(this))">📋 Copy Link</button>';
+  }
 
   // 1. Contributor Bar Chart
   var contribEl = document.getElementById('chart-contributors');
@@ -245,14 +384,127 @@ Generated by <strong>gitpeek</strong> &mdash; <span id="generated-at"></span>
     }
   }
   var riskSection = document.getElementById('risk-section');
-  var riskList = document.getElementById('risk-list');
-  if (riskSection && riskList && data.busFactor && data.busFactor.singlePointRisks && data.busFactor.singlePointRisks.length > 0) {
+  var riskGroups = document.getElementById('risk-groups');
+  var riskFilterInfo = document.getElementById('risk-filter-info');
+  if (riskSection && riskGroups && data.busFactor && data.busFactor.singlePointRisks && data.busFactor.singlePointRisks.length > 0) {
     riskSection.style.display = 'block';
-    data.busFactor.singlePointRisks.forEach(function(f) {
-      var li = document.createElement('li');
-      li.textContent = f;
-      riskList.appendChild(li);
+    var filtered = data.busFactor.singlePointRisks;
+
+    riskFilterInfo.innerHTML = '<span>Showing <span class="filter-count">' + filtered.length + '</span> actionable risks</span>' +
+      '<span style="color:#484f58">(boilerplate and single-change files excluded)</span>';
+
+    // Group by second-level directory (e.g. "typescript/postgres-lambda")
+    var groups = {};
+    filtered.forEach(function(risk) {
+      var fp = typeof risk === 'string' ? risk : risk.filePath;
+      var parts = fp.split('/');
+      var groupKey = parts.length >= 2 ? parts.slice(0, 2).join('/') : parts[0];
+      if (!groups[groupKey]) groups[groupKey] = [];
+      groups[groupKey].push(risk);
     });
+
+    var sortedGroups = Object.keys(groups).sort(function(a, b) {
+      return groups[b].length - groups[a].length;
+    });
+
+    sortedGroups.forEach(function(groupKey) {
+      var groupRisks = groups[groupKey];
+      var groupDiv = document.createElement('div');
+      groupDiv.className = 'risk-group';
+
+      var authorCounts = {};
+      groupRisks.forEach(function(r) {
+        if (typeof r !== 'string' && r.soleAuthor) {
+          authorCounts[r.soleAuthor] = (authorCounts[r.soleAuthor] || 0) + 1;
+        }
+      });
+      var dominantAuthor = Object.keys(authorCounts).sort(function(a,b){return authorCounts[b]-authorCounts[a];})[0] || '?';
+      var maxPct = Math.max.apply(null, groupRisks.map(function(r){return typeof r === 'string' ? 100 : r.authorPercentage;}));
+
+      var header = document.createElement('div');
+      header.className = 'risk-group-header';
+      header.innerHTML = '<span class="risk-arrow">▶</span>' +
+        '<span class="risk-dir">' + groupKey + '/</span>' +
+        '<span class="risk-count">' + groupRisks.length + ' file' + (groupRisks.length !== 1 ? 's' : '') + ' · ' + dominantAuthor + '</span>' +
+        '<span class="risk-badge">' + maxPct + '% risk</span>';
+      groupDiv.appendChild(header);
+
+      var body = document.createElement('div');
+      body.className = 'risk-group-body';
+      var ul = document.createElement('ul');
+      ul.className = 'risk-list';
+
+      groupRisks.forEach(function(risk) {
+        var li = document.createElement('li');
+        var isString = typeof risk === 'string';
+        var filePath = isString ? risk : risk.filePath;
+        var fileName = filePath.split('/').pop();
+        var rh = document.createElement('div');
+        rh.className = 'risk-header';
+        if (isString) {
+          rh.innerHTML = '<span class="risk-arrow">▶</span><span class="risk-file">' + filePath + '</span>';
+        } else {
+          rh.innerHTML = '<span class="risk-arrow">▶</span><span class="risk-file">' + filePath + '</span><span class="risk-badge">' + risk.authorPercentage + '%</span>';
+        }
+        li.appendChild(rh);
+        if (!isString) {
+          var detail = document.createElement('div');
+          detail.className = 'risk-detail';
+          var spanText = risk.spanMonths > 0 ? risk.spanMonths + ' month' + (risk.spanMonths !== 1 ? 's' : '') : 'less than a month';
+          detail.innerHTML =
+            '<strong>' + risk.soleAuthor + '</strong> is the only recent contributor.<br>' +
+            '• <strong>' + risk.authorPercentage + '%</strong> of all ' + risk.totalChanges + ' changes<br>' +
+            '• Active for <strong>' + spanText + '</strong><br>' +
+            '• Last touched: <strong>' + new Date(risk.lastSeen).toLocaleDateString() + '</strong><br>' +
+            '<em style="color:#e3b341;margin-top:4px;display:inline-block">💡 If ' + risk.soleAuthor + ' leaves, knowledge of <code style="background:#21262d;padding:2px 6px;border-radius:3px">' + fileName + '</code> could be lost.</em>';
+          li.appendChild(detail);
+          rh.addEventListener('click', function(e) {
+            e.stopPropagation();
+            rh.classList.toggle('open');
+            detail.classList.toggle('open');
+          });
+        }
+        ul.appendChild(li);
+      });
+
+      body.appendChild(ul);
+      groupDiv.appendChild(body);
+
+      header.addEventListener('click', function() {
+        header.classList.toggle('open');
+        body.classList.toggle('open');
+      });
+
+      riskGroups.appendChild(groupDiv);
+    });
+
+    // CSV Export button
+    var csvBtn = document.getElementById('export-risks-csv');
+    if (csvBtn) {
+      csvBtn.addEventListener('click', function() {
+        var rows = [['File','Sole Author','Author %','Total Changes','Span (months)','Last Touched']];
+        filtered.forEach(function(r) {
+          if (typeof r === 'string') {
+            rows.push([r,'','','','','']);
+          } else {
+            rows.push([r.filePath, r.soleAuthor, r.authorPercentage + '%', r.totalChanges, r.spanMonths, new Date(r.lastSeen).toLocaleDateString()]);
+          }
+        });
+        var csv = rows.map(function(row) {
+          return row.map(function(cell) {
+            var s = String(cell);
+            return s.indexOf(',') >= 0 || s.indexOf('"') >= 0 ? '"' + s.replace(/"/g, '""') + '"' : s;
+          }).join(',');
+        }).join('\n');
+        var blob = new Blob([csv], { type: 'text/csv' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = data.repoName + '-risks.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }
   }
 
   // 6. PR Velocity Line Chart

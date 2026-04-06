@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.html
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!vitest.config.ts
+.DS_Store
+*.log
+.kiro/
+.vscode/

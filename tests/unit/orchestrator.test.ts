@@ -104,12 +104,14 @@ const SAMPLE_NUMSTAT = [
   '20\t0\tsrc/feature.ts',
 ].join('\n');
 
-// Sample name-status output for hotspots
+// Sample name-status output for hotspots (real git format: hash, blank line, files)
 const SAMPLE_NAME_STATUS = [
   'aaa0000000000000000000000000000000000001',
+  '',
   'M\tsrc/index.ts',
   '',
   'aaa0000000000000000000000000000000000002',
+  '',
   'M\tsrc/index.ts',
   'A\tsrc/feature.ts',
 ].join('\n');
@@ -126,6 +128,7 @@ describe('parseNameStatusOutput', () => {
   it('parses a single commit with files', () => {
     const raw = [
       'abc1234567890abc1234567890abc123456789ab',
+      '',
       'M\tsrc/file.ts',
       'A\tsrc/new.ts',
       '',
@@ -142,9 +145,11 @@ describe('parseNameStatusOutput', () => {
   it('parses multiple commits separated by blank lines', () => {
     const raw = [
       'aaaa34567890abc1234567890abc1234567890ab',
+      '',
       'M\tsrc/a.ts',
       '',
       'bbbb34567890abc1234567890abc1234567890ab',
+      '',
       'D\tsrc/b.ts',
       '',
     ].join('\n');
@@ -158,6 +163,7 @@ describe('parseNameStatusOutput', () => {
   it('handles commits without trailing blank line', () => {
     const raw = [
       'aaaa34567890abc1234567890abc1234567890ab',
+      '',
       'M\tsrc/a.ts',
     ].join('\n');
 
@@ -173,10 +179,12 @@ describe('parseNameStatusOutput', () => {
   it('handles consecutive blank lines', () => {
     const raw = [
       'aaaa34567890abc1234567890abc1234567890ab',
+      '',
       'M\tsrc/a.ts',
       '',
       '',
       'bbbb34567890abc1234567890abc1234567890ab',
+      '',
       'A\tsrc/b.ts',
     ].join('\n');
 
@@ -238,7 +246,7 @@ describe('runAnalysis', () => {
   });
 
   it('generates HTML report and writes to output path', async () => {
-    await runAnalysis(testConfig());
+    await runAnalysis(testConfig({ output: '/tmp/report.html' }));
 
     expect(renderHtmlReport).toHaveBeenCalledTimes(1);
     expect(writeFile).toHaveBeenCalledWith('/tmp/report.html', '<html>mock</html>', 'utf-8');
@@ -252,7 +260,7 @@ describe('runAnalysis', () => {
   });
 
   it('writes JSON when config.json is true', async () => {
-    await runAnalysis(testConfig({ json: true }));
+    await runAnalysis(testConfig({ json: true, output: '/tmp/report.html' }));
 
     expect(writeJsonReport).toHaveBeenCalledTimes(1);
     expect(vi.mocked(writeJsonReport).mock.calls[0][1]).toBe('/tmp/report.json');

@@ -37,7 +37,7 @@ function makeSampleReportData(): ReportData {
     perDirectory: new Map([
       ['src', { scope: 'src', busFactor: 1, topAuthors: [{ name: 'Alice', weightedCommits: 30 }] }],
     ]),
-    singlePointRisks: ['src/secret.ts'],
+    singlePointRisks: [{ filePath: 'src/secret.ts', soleAuthor: 'Alice', totalChanges: 5, authorPercentage: 100, firstSeen: '2024-01-01T00:00:00.000Z', lastSeen: '2024-06-01T00:00:00.000Z', spanMonths: 5 }],
   };
 
   const prVelocity: PRVelocityData = {

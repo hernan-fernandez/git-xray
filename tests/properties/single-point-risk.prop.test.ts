@@ -71,10 +71,12 @@ describe('Property 12: Single-point-of-knowledge detection', () => {
 
           const result = analyzeBusFactor(commits, records, referenceDate);
 
-          // Compute expected single-point risks using the SAME getAgeInMonths function
-          // that the implementation uses, to avoid discrepancies
+          // Compute expected: files with exactly 1 recent author,
+          // at least 2 total changes, and not boilerplate
           const fileAuthorsLast12 = new Map<string, Set<string>>();
+          const fileTotalChanges = new Map<string, number>();
           for (const r of records) {
+            fileTotalChanges.set(r.filePath, (fileTotalChanges.get(r.filePath) ?? 0) + 1);
             const ageMonths = getAgeInMonths(r.date, referenceDate);
             if (ageMonths <= 12) {
               let authors = fileAuthorsLast12.get(r.filePath);
@@ -88,12 +90,13 @@ describe('Property 12: Single-point-of-knowledge detection', () => {
 
           const expectedRisks = new Set<string>();
           for (const [filePath, authors] of fileAuthorsLast12) {
-            if (authors.size === 1) {
+            const totalChanges = fileTotalChanges.get(filePath) ?? 0;
+            if (authors.size === 1 && totalChanges >= 2) {
               expectedRisks.add(filePath);
             }
           }
 
-          const actualRisks = new Set(result.singlePointRisks);
+          const actualRisks = new Set(result.singlePointRisks.map(r => r.filePath));
 
           // Bidirectional check: actual ↔ expected
           for (const file of actualRisks) {

@@ -1,4 +1,4 @@
-// gitpeek configuration and flag parsing
+// git-wrapped configuration and flag parsing
 const KNOWN_FLAGS = new Set([
     '--since',
     '--until',
@@ -10,7 +10,7 @@ const KNOWN_FLAGS = new Set([
     '--json',
     '--follow-renames',
 ]);
-const HELP_TEXT = `Usage: gitpeek [options] [path]
+const HELP_TEXT = `Usage: git-wrapped [options] [path]
 
 Analyze a git repository and generate a visual stats report.
 
@@ -19,7 +19,7 @@ Options:
   --until <date>       Limit analysis to commits before this date
   --branch <name>      Analyze a specific branch (default: current branch)
   --scope <path>       Restrict analysis to a sub-folder
-  --output <path>      Output path for the HTML report (default: ./gitpeek-report.html)
+  --output <path>      Output path for the HTML report (default: ./<repo-name>-<date>.html)
   --no-open            Don't auto-open the report in a browser
   --no-color           Disable colored terminal output
   --json               Output raw analysis data as JSON alongside the HTML report
@@ -37,7 +37,7 @@ export function parseConfig(argv) {
     const config = {
         repoPath: process.cwd(),
         followRenames: false,
-        output: './gitpeek-report.html',
+        output: '',
         noOpen: false,
         noColor: false,
         json: false,
