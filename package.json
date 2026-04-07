@@ -1,6 +1,6 @@
 {
   "name": "git-xray",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "CLI tool that generates beautiful, shareable visual reports of git repository statistics. X-ray your codebase.",
   "type": "module",
   "bin": {
