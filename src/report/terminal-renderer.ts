@@ -262,6 +262,10 @@ export function renderTerminalReport(reportData: ReportData, noColor: boolean): 
   if (reportData.personality) {
     lines.push(`  ${reportData.personality.icon} ${chalk.bold(reportData.personality.type)} — ${reportData.personality.description}`);
   }
+  if (reportData.summary) {
+    lines.push('');
+    lines.push(chalk.dim(`  ${reportData.summary}`));
+  }
 
   // Sections
   lines.push(renderContributors(chalk, reportData));

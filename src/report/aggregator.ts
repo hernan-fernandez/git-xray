@@ -21,6 +21,7 @@ export interface ReportData {
   prVelocity: PRVelocityData;
   personal?: PersonalStats;
   personality?: RepoPersonality;
+  summary?: string;
   generatedAt: Date;
 }
 
@@ -35,6 +36,7 @@ export interface AggregateInput {
   prVelocity: PRVelocityData;
   personal?: PersonalStats;
   personality?: RepoPersonality;
+  summary?: string;
 }
 
 /** Truncation limits per output context */
@@ -59,6 +61,7 @@ export function aggregateReport(input: AggregateInput): ReportData {
     prVelocity: input.prVelocity,
     personal: input.personal,
     personality: input.personality,
+    summary: input.summary,
     generatedAt: new Date(),
   };
 }
