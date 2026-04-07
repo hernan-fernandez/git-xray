@@ -32,7 +32,7 @@ export function classifyPersonality(input: PersonalityInput): RepoPersonality {
   const totalCommits = contributions.totalCommits;
   const bf = busFactor.overall.busFactor;
   const siloCount = busFactor.singlePointRisks.length;
-  const authorCount = authors.length;
+  const authorCount = contributions.totalAuthors;
 
   // Check if top contributor is a bot
   const topAuthor = authors[0];
@@ -45,6 +45,20 @@ export function classifyPersonality(input: PersonalityInput): RepoPersonality {
   const snapshots = complexity.snapshots;
   const isGrowing = snapshots.length >= 2 &&
     snapshots[snapshots.length - 1].totalFiles > snapshots[0].totalFiles * 1.2;
+
+  // Mega Project: massive repo with many contributors
+  if (totalCommits >= 10000 && authorCount >= 100 && bf >= 10) {
+    return {
+      type: 'Cathedral',
+      icon: '⛪',
+      description: 'A massive, well-established project with deep contributor roots.',
+      traits: [
+        `${totalCommits.toLocaleString()} commits by ${authorCount.toLocaleString()} contributors`,
+        `Bus factor: ${bf}`,
+        siloCount > 0 ? `${siloCount.toLocaleString()} knowledge silos` : 'No knowledge silos',
+      ],
+    };
+  }
 
   // No commits at all
   if (totalCommits === 0) {

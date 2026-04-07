@@ -23,7 +23,7 @@ export function generateSummary(input: SummaryInput): string {
   const { repoName, contributions, busFactor, prVelocity, hotspots, personality } = input;
   const parts: string[] = [];
 
-  const authorCount = contributions.authors.length;
+  const authorCount = contributions.totalAuthors;
   const totalCommits = contributions.totalCommits;
   const bf = busFactor.overall.busFactor;
   const silos = busFactor.singlePointRisks;
@@ -80,6 +80,8 @@ export function generateSummary(input: SummaryInput): string {
     const days = (prVelocity.averageMergeTime / 86400000).toFixed(1);
     if (parseFloat(days) <= 1) {
       parts.push(`PRs merge fast — average ${days} days. The team has a quick review cycle.`);
+    } else if (parseFloat(days) >= 90) {
+      parts.push(`Average merge time is ${days} days — this repo likely uses a non-standard merge workflow (mailing lists, staged releases, etc.).`);
     } else if (parseFloat(days) >= 7) {
       parts.push(`PRs take an average of ${days} days to merge, which may indicate review bottlenecks.`);
     } else {
@@ -116,7 +118,7 @@ function generateRecommendations(
 
   if (prVelocity.available && prVelocity.averageMergeTime !== null) {
     const days = prVelocity.averageMergeTime / 86400000;
-    if (days >= 7) {
+    if (days >= 7 && days < 90) {
       recs.push('Consider streamlining the review process to reduce merge times.');
     }
   }

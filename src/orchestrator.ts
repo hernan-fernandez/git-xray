@@ -131,7 +131,7 @@ function buildFilters(config: GitPeekConfig): CommandFilters {
  * Default empty data for each analysis section (used when a phase fails).
  */
 function emptyContributions(): ContributionData {
-  return { authors: [], heatmap: Array.from({ length: 7 }, () => Array(24).fill(0)), totalCommits: 0 };
+  return { authors: [], heatmap: Array.from({ length: 7 }, () => Array(24).fill(0)), totalCommits: 0, totalAuthors: 0 };
 }
 
 function emptyHotspots(): HotspotData {

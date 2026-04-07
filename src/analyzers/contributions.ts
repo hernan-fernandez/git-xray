@@ -16,6 +16,7 @@ export interface ContributionData {
   authors: AuthorSummary[];
   heatmap: number[][];          // [dayOfWeek][hourOfDay] -> commit count (7x24)
   totalCommits: number;
+  totalAuthors: number;         // actual count before truncation
 }
 
 /**
@@ -89,5 +90,6 @@ export function analyzeContributions(
     authors,
     heatmap,
     totalCommits: commits.length,
+    totalAuthors: allAuthors.length,
   };
 }
