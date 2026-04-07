@@ -8,6 +8,7 @@ import type { ComplexityTrendData } from '../analyzers/complexity.js';
 import type { BusFactorData } from '../analyzers/bus-factor.js';
 import type { PRVelocityData } from '../analyzers/pr-velocity.js';
 import type { PersonalStats } from '../analyzers/personal.js';
+import type { RepoPersonality } from '../analyzers/personality.js';
 
 export interface ReportData {
   repoName: string;
@@ -19,6 +20,7 @@ export interface ReportData {
   busFactor: BusFactorData;
   prVelocity: PRVelocityData;
   personal?: PersonalStats;
+  personality?: RepoPersonality;
   generatedAt: Date;
 }
 
@@ -32,6 +34,7 @@ export interface AggregateInput {
   busFactor: BusFactorData;
   prVelocity: PRVelocityData;
   personal?: PersonalStats;
+  personality?: RepoPersonality;
 }
 
 /** Truncation limits per output context */
@@ -55,6 +58,7 @@ export function aggregateReport(input: AggregateInput): ReportData {
     busFactor: input.busFactor,
     prVelocity: input.prVelocity,
     personal: input.personal,
+    personality: input.personality,
     generatedAt: new Date(),
   };
 }

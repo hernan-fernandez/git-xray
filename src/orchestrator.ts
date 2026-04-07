@@ -36,6 +36,7 @@ import {
 import { analyzeBusFactor, type BusFactorData } from './analyzers/bus-factor.js';
 import { analyzePRVelocity, type PRVelocityData } from './analyzers/pr-velocity.js';
 import { aggregateReport, truncateForHtml, type ReportData } from './report/aggregator.js';
+import { classifyPersonality, type RepoPersonality } from './analyzers/personality.js';
 import { renderHtmlReport } from './report/html-renderer.js';
 import { renderTerminalReport } from './report/terminal-renderer.js';
 import { writeJsonReport } from './report/json-writer.js';
@@ -363,6 +364,15 @@ export async function runAnalysis(config: GitPeekConfig): Promise<void> {
     reportTo = new Date();
   }
 
+  // Classify repo personality
+  const personality = classifyPersonality({
+    contributions,
+    busFactor,
+    prVelocity,
+    hotspots,
+    complexity,
+  });
+
   // Aggregate
   const reportData = aggregateReport({
     repoName,
@@ -374,6 +384,7 @@ export async function runAnalysis(config: GitPeekConfig): Promise<void> {
     busFactor,
     prVelocity,
     personal: personalStats,
+    personality,
   });
 
   // Render HTML report (truncated for HTML)

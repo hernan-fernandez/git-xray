@@ -259,6 +259,9 @@ export function renderTerminalReport(reportData: ReportData, noColor: boolean): 
   lines.push(chalk.bold.white(`  git-xray report: ${reportData.repoName}`));
   lines.push(chalk.dim(`  Branch: ${reportData.analyzedBranch}`));
   lines.push(chalk.dim(`  Period: ${reportData.dateRange.from.toISOString().slice(0, 10)} → ${reportData.dateRange.to.toISOString().slice(0, 10)}`));
+  if (reportData.personality) {
+    lines.push(`  ${reportData.personality.icon} ${chalk.bold(reportData.personality.type)} — ${reportData.personality.description}`);
+  }
 
   // Sections
   lines.push(renderContributors(chalk, reportData));
