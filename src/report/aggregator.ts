@@ -9,6 +9,7 @@ import type { BusFactorData } from '../analyzers/bus-factor.js';
 import type { PRVelocityData } from '../analyzers/pr-velocity.js';
 import type { PersonalStats } from '../analyzers/personal.js';
 import type { RepoPersonality } from '../analyzers/personality.js';
+import type { CollaborationData } from '../analyzers/collaboration.js';
 
 export interface ReportData {
   repoName: string;
@@ -21,6 +22,7 @@ export interface ReportData {
   prVelocity: PRVelocityData;
   personal?: PersonalStats;
   personality?: RepoPersonality;
+  collaboration?: CollaborationData;
   summary?: string;
   generatedAt: Date;
 }
@@ -36,6 +38,7 @@ export interface AggregateInput {
   prVelocity: PRVelocityData;
   personal?: PersonalStats;
   personality?: RepoPersonality;
+  collaboration?: CollaborationData;
   summary?: string;
 }
 
@@ -61,6 +64,7 @@ export function aggregateReport(input: AggregateInput): ReportData {
     prVelocity: input.prVelocity,
     personal: input.personal,
     personality: input.personality,
+    collaboration: input.collaboration,
     summary: input.summary,
     generatedAt: new Date(),
   };

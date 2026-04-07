@@ -38,6 +38,7 @@ import { analyzePRVelocity, type PRVelocityData } from './analyzers/pr-velocity.
 import { aggregateReport, truncateForHtml, type ReportData } from './report/aggregator.js';
 import { classifyPersonality, type RepoPersonality } from './analyzers/personality.js';
 import { generateSummary } from './analyzers/summary.js';
+import { analyzeCollaboration, type CollaborationData } from './analyzers/collaboration.js';
 import { renderHtmlReport } from './report/html-renderer.js';
 import { renderTerminalReport } from './report/terminal-renderer.js';
 import { writeJsonReport } from './report/json-writer.js';
@@ -365,6 +366,9 @@ export async function runAnalysis(config: GitPeekConfig): Promise<void> {
     reportTo = new Date();
   }
 
+  // Collaboration graph
+  const collaboration = analyzeCollaboration(fileChanges);
+
   // Classify repo personality
   const personality = classifyPersonality({
     contributions,
@@ -396,6 +400,7 @@ export async function runAnalysis(config: GitPeekConfig): Promise<void> {
     prVelocity,
     personal: personalStats,
     personality,
+    collaboration,
     summary,
   });
 
