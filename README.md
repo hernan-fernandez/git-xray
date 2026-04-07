@@ -129,8 +129,9 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - run: npx git-xray --no-open --json
+          node-version: '24'
+      - run: npm install -g git-xray
+      - run: git-xray --no-open --json
       - uses: actions/upload-artifact@v4
         with:
           name: git-xray-report
