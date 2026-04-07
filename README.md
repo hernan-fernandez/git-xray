@@ -109,6 +109,36 @@ The risk list automatically filters out noise:
 
 This keeps the risk list focused on files that actually matter.
 
+## GitHub Action
+
+Add git-xray to your CI pipeline. Create `.github/workflows/git-xray.yml`:
+
+```yaml
+name: git-xray Report
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npx git-xray --no-open --json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: git-xray-report
+          path: '*.html'
+```
+
+This runs on every release and uploads the report as a downloadable artifact.
+
 ## Requirements
 
 - **Node.js** 18+

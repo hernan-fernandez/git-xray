@@ -1,0 +1,41 @@
+name: git-xray Report
+
+on:
+  # Run on every release
+  release:
+    types: [published]
+  # Run manually from the Actions tab
+  workflow_dispatch:
+  # Optional: run on a schedule (e.g., monthly)
+  # schedule:
+  #   - cron: '0 0 1 * *'
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history needed for analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run git-xray
+        run: npx git-xray --no-open --json
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: git-xray-report
+          path: '*.html'
+
+      - name: Upload JSON data
+        uses: actions/upload-artifact@v4
+        with:
+          name: git-xray-data
+          path: '*.json'
+          if-no-files-found: ignore
