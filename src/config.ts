@@ -2,6 +2,7 @@
 
 export interface GitPeekConfig {
   repoPath: string;
+  repoDisplayName?: string;  // Set when cloning from URL
   branch?: string;
   since?: Date;
   until?: Date;

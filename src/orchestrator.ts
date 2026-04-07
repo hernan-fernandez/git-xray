@@ -178,7 +178,7 @@ function openInBrowser(filePath: string): void {
 export async function runAnalysis(config: GitPeekConfig): Promise<void> {
   const gitRunner: GitRunner = new GitCommandRunner(config.repoPath);
   const filters = buildFilters(config);
-  const repoName = basename(config.repoPath);
+  const repoName = config.repoDisplayName || basename(config.repoPath);
 
   // Resolve output path: if not specified, generate a unique default
   if (!config.output) {

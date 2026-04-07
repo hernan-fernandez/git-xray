@@ -16,19 +16,29 @@ export interface ValidationFailure {
 export type ValidationResult = ValidationSuccess | ValidationFailure;
 
 /**
- * Validate that the target path contains a `.git` directory.
+ * Validate that the target path is a git repository.
+ * Supports both regular repos (.git subdirectory) and bare repos (HEAD file at root).
  */
 export async function validateRepo(repoPath: string): Promise<ValidationResult> {
+  // Check for regular repo (.git directory)
   const gitDir = resolve(repoPath, '.git');
   try {
     const stat = await fs.stat(gitDir);
-    if (!stat.isDirectory()) {
-      return { valid: false, error: `Not a git repository: ${repoPath}` };
-    }
-    return { valid: true };
+    if (stat.isDirectory()) return { valid: true };
   } catch {
-    return { valid: false, error: `Not a git repository: ${repoPath}` };
+    // Not a regular repo, check for bare repo
   }
+
+  // Check for bare repo (HEAD file at root)
+  const headFile = resolve(repoPath, 'HEAD');
+  try {
+    const stat = await fs.stat(headFile);
+    if (stat.isFile()) return { valid: true };
+  } catch {
+    // Not a bare repo either
+  }
+
+  return { valid: false, error: `Not a git repository: ${repoPath}` };
 }
 
 /**

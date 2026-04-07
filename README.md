@@ -27,9 +27,12 @@ npx git-xray
 
 # Run against a specific repo
 npx git-xray /path/to/repo
+
+# Run against a remote repo (no clone needed)
+npx git-xray https://github.com/facebook/react
 ```
 
-That's it. No install needed — `npx` downloads and runs it automatically.
+That's it. No install needed — `npx` downloads and runs it automatically. Remote URLs are cloned to a temp directory, analyzed, then cleaned up.
 
 This generates a report file like `aws-cdk-examples-2026-04-06.html` (opens automatically in your browser) and prints a terminal summary. Each run gets a unique filename based on the repo name and date.
 
@@ -110,7 +113,7 @@ This keeps the risk list focused on files that actually matter.
 
 - **Node.js** 18+
 - **git** installed and on your PATH
-- The target repository must be cloned locally (git-xray reads the `.git` directory)
+- The target repository must be local or a remote git URL (GitHub, GitLab, Bitbucket, etc.)
 
 ## Development
 
