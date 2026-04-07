@@ -7,6 +7,7 @@ export interface GitPeekConfig {
   since?: Date;
   until?: Date;
   scope?: string;
+  author?: string;           // Personal mode: filter to one author
   followRenames: boolean;
   output: string;
   noOpen: boolean;
@@ -24,6 +25,8 @@ const KNOWN_FLAGS = new Set([
   '--no-color',
   '--json',
   '--follow-renames',
+  '--author',
+  '--me',
 ]);
 
 const HELP_TEXT = `Usage: git-xray [options] [path]
@@ -40,6 +43,8 @@ Options:
   --no-color           Disable colored terminal output
   --json               Output raw analysis data as JSON alongside the HTML report
   --follow-renames     Track files across renames (may be slow on large repos)
+  --author <name>      Personal mode: show stats for a specific author
+  --me                 Personal mode: use your git config user.name
 `;
 
 export class ConfigError extends Error {
@@ -129,6 +134,15 @@ export function parseConfig(argv: string[]): GitPeekConfig {
           break;
         case '--follow-renames':
           config.followRenames = true;
+          break;
+        case '--author': {
+          const value = inlineValue ?? args[++i];
+          if (!value) throw new ConfigError('--author requires a name');
+          config.author = value;
+          break;
+        }
+        case '--me':
+          config.author = '__ME__'; // Resolved later from git config
           break;
       }
     } else {

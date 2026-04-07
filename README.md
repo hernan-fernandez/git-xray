@@ -22,14 +22,20 @@ git-xray analyzes your git history and produces a self-contained HTML report wit
 ## Quick Start
 
 ```bash
-# Run against the current repo
+# Analyze the current repo
 npx git-xray
 
-# Run against a specific repo
+# Analyze a local repo
 npx git-xray /path/to/repo
 
-# Run against a remote repo (no clone needed)
-npx git-xray https://github.com/facebook/react
+# Analyze a remote repo (clones automatically)
+npx git-xray https://github.com/expressjs/express
+
+# Your personal stats in this repo
+npx git-xray --me
+
+# Someone else's stats in this repo
+npx git-xray --author "Alice Smith" /path/to/repo
 ```
 
 That's it. No install needed — `npx` downloads and runs it automatically. Remote URLs are cloned to a temp directory, analyzed, then cleaned up.
@@ -55,6 +61,8 @@ git-xray [options] [path]
 | `--json` | Output raw analysis data as JSON alongside the HTML report |
 | `--no-open` | Don't auto-open the report in a browser |
 | `--no-color` | Disable colored terminal output |
+| `--author <name>` | Personal mode: show stats for a specific author |
+| `--me` | Personal mode: auto-detect from your git config |
 
 ### Examples
 

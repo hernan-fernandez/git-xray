@@ -22,6 +22,7 @@ import { LogParser, type CommitRecord } from './parsers/log-parser.js';
 import { NumstatParser, type FileChangeRecord } from './parsers/numstat-parser.js';
 import { MergeParser, type MergeRecord } from './parsers/merge-parser.js';
 import { analyzeContributions, type ContributionData } from './analyzers/contributions.js';
+import { analyzePersonal, type PersonalStats } from './analyzers/personal.js';
 import {
   analyzeHotspots,
   type HotspotData,
@@ -194,6 +195,22 @@ export async function runAnalysis(config: GitPeekConfig): Promise<void> {
   let complexity: ComplexityTrendData = emptyComplexity();
   let busFactor: BusFactorData = emptyBusFactor();
   let prVelocity: PRVelocityData = emptyPRVelocity();
+  let personalStats: PersonalStats | undefined;
+
+  // Resolve --me flag to actual git user name
+  if (config.author === '__ME__') {
+    try {
+      const name = await gitRunner.exec(['config', 'user.name']);
+      config.author = name.trim();
+      if (!config.author) {
+        console.warn('Warning: Could not detect git user.name. Use --author "Your Name" instead.');
+        config.author = undefined;
+      }
+    } catch {
+      console.warn('Warning: Could not detect git user.name. Use --author "Your Name" instead.');
+      config.author = undefined;
+    }
+  }
 
   // Phase 1: Contributions
   try {
@@ -209,6 +226,15 @@ export async function runAnalysis(config: GitPeekConfig): Promise<void> {
   } catch (err) {
     endPhase();
     console.warn('Warning: Contribution analysis failed, skipping.', (err as Error).message);
+  }
+
+  // Personal mode analysis (after contributions phase has commits + fileChanges)
+  if (config.author && commits.length > 0) {
+    personalStats = analyzePersonal(config.author, commits, fileChanges);
+    if (personalStats.totalCommits === 0) {
+      console.warn(`Warning: No commits found for author "${config.author}". Showing full repo report.`);
+      personalStats = undefined;
+    }
   }
 
   // Phase 2: Hotspots
@@ -339,7 +365,7 @@ export async function runAnalysis(config: GitPeekConfig): Promise<void> {
 
   // Aggregate
   const reportData = aggregateReport({
-    repoName: basename(config.repoPath),
+    repoName,
     branch: config.branch ?? 'HEAD',
     dateRange: { from: reportFrom, to: reportTo },
     contributions,
@@ -347,6 +373,7 @@ export async function runAnalysis(config: GitPeekConfig): Promise<void> {
     complexity,
     busFactor,
     prVelocity,
+    personal: personalStats,
   });
 
   // Render HTML report (truncated for HTML)

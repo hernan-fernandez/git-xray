@@ -86,8 +86,11 @@ describe('renderHtmlReport', () => {
 
   it('should have zero external resource references of any kind', async () => {
     const html = await renderHtmlReport(makeSampleReportData());
-    // No src or href pointing to http/https
-    expect(html).not.toMatch(/(?:src|href)\s*=\s*["']https?:\/\//i);
+    // No external script src or link href pointing to http/https
+    // (share buttons with href to twitter are intentional, not resource dependencies)
+    expect(html).not.toMatch(/<script[^>]+src\s*=\s*["']https?:\/\//i);
+    expect(html).not.toMatch(/<link[^>]+href\s*=\s*["']https?:\/\//i);
+    expect(html).not.toMatch(/<img[^>]+src\s*=\s*["']https?:\/\//i);
   });
 
   it('should contain the serialized ReportData with window.__GITPEEK_DATA__', async () => {
