@@ -2,7 +2,7 @@
 
 // git-xray CLI entry point
 
-import { parseConfig, ConfigError } from './config.js';
+import { parseConfig, ConfigError, HelpRequested, HELP_TEXT } from './config.js';
 import { validate } from './validator.js';
 import { runAnalysis } from './orchestrator.js';
 import { cloneIfUrl, cleanupClone, repoNameFromUrl } from './remote.js';
@@ -13,6 +13,10 @@ async function main(): Promise<void> {
   try {
     config = parseConfig(process.argv);
   } catch (err) {
+    if (err instanceof HelpRequested) {
+      process.stdout.write(HELP_TEXT);
+      process.exit(0);
+    }
     if (err instanceof ConfigError) {
       process.stderr.write(err.message + '\n');
       process.exit(1);

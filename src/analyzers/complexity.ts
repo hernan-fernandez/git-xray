@@ -1,17 +1,29 @@
 // Complexity trend computation
 // Samples repository snapshots at regular intervals (monthly or weekly)
 // and computes totalFiles, totalSize, and churnRate for each snapshot.
+//
+// churnRate is the share of files that changed between consecutive snapshots,
+// computed from `git diff-tree -r --name-only <prev> <curr>`. It is a real
+// measurement, not a proxy from file-count differences.
 
 import type { GitRunner } from '../git/runner.js';
 import type { TreeEntry } from '../parsers/ls-tree-parser.js';
-import { revListSnapshot, lsTree } from '../git/commands.js';
+import { revListSnapshot, lsTree, diffTreeNames } from '../git/commands.js';
 import { LsTreeParser } from '../parsers/ls-tree-parser.js';
+import { pathInScope } from '../utils/path-scope.js';
 
 export interface ComplexitySnapshot {
   date: Date;
   totalFiles: number;
   totalSize: number;
   churnRate: number;
+  /**
+   * Commit hash that the snapshot reflects. Optional so analyzer outputs
+   * remain compatible with synthetic test fixtures that build snapshots
+   * directly. When present, enables real churn computation between
+   * consecutive snapshots.
+   */
+  commitHash?: string;
 }
 
 export interface ComplexityTrendData {
@@ -29,12 +41,37 @@ export interface ComplexityConfig {
 const THREE_MONTHS_MS = 3 * 30 * 24 * 60 * 60 * 1000; // ~90 days
 
 /**
+ * Maximum number of complexity snapshots returned. Each snapshot triggers a
+ * rev-list + ls-tree (and a diff-tree against the previous snapshot), so
+ * unbounded sampling on long histories can dominate runtime. 24 keeps the
+ * chart readable and bounds the worst case to ~72 git invocations.
+ */
+const MAX_SNAPSHOTS = 24;
+
+/**
  * Determine whether to use monthly or weekly intervals.
  * Monthly if the date range spans >= 3 months, weekly otherwise.
  */
 export function determineInterval(from: Date, to: Date): 'weekly' | 'monthly' {
   const rangeMs = to.getTime() - from.getTime();
   return rangeMs >= THREE_MONTHS_MS ? 'monthly' : 'weekly';
+}
+
+/**
+ * Downsample a sorted array of dates to at most `max` entries by picking
+ * evenly-spaced indices. Always preserves the first and last entries so the
+ * trend chart shows the true endpoints. No-op when `dates.length <= max`.
+ */
+export function downsampleDates(dates: Date[], max: number): Date[] {
+  if (dates.length <= max || max <= 1) return dates;
+  // Map index 0..max-1 onto 0..dates.length-1 with rounding so the endpoints
+  // are exactly the first and last input dates.
+  const out: Date[] = [];
+  for (let i = 0; i < max; i++) {
+    const sourceIdx = Math.round((i * (dates.length - 1)) / (max - 1));
+    out.push(dates[sourceIdx]);
+  }
+  return out;
 }
 
 /**
@@ -105,8 +142,8 @@ export function parseLsTreeOutput(output: string, scope?: string): { totalFiles:
 
     if (type !== 'blob') continue;
 
-    // Apply scope filter if provided
-    if (scope && !path.startsWith(scope)) continue;
+    // Apply scope filter if provided (segment-boundary match, not raw prefix)
+    if (scope && !pathInScope(path, scope)) continue;
 
     const size = sizeStr === '-' ? 0 : parseInt(sizeStr, 10);
     if (isNaN(size)) continue;
@@ -161,7 +198,10 @@ export async function analyzeComplexityTrend(
   gitRunner: GitRunner,
 ): Promise<ComplexityTrendData> {
   const interval = determineInterval(config.from, config.to);
-  const snapshotDates = generateSnapshotDates(config.from, config.to, interval);
+  const allDates = generateSnapshotDates(config.from, config.to, interval);
+  // Cap the number of snapshots so very long histories stay responsive.
+  // Endpoints are preserved so the chart still shows the full range.
+  const snapshotDates = downsampleDates(allDates, MAX_SNAPSHOTS);
 
   const snapshots: ComplexitySnapshot[] = [];
 
@@ -175,37 +215,66 @@ export async function analyzeComplexityTrend(
       date,
       totalFiles,
       totalSize,
-      churnRate: 0, // Will be computed after all snapshots are collected
+      churnRate: 0, // Computed below from inter-snapshot diffs
+      commitHash,
     });
   }
 
-  // Compute churnRate between consecutive snapshots
-  // churnRate = |files changed| / totalFiles
-  // We approximate "files changed" as the absolute difference in totalFiles between snapshots
-  // A more accurate approach: compare file sets, but we use the size/count delta as proxy
-  computeChurnRates(snapshots);
+  // Compute churnRate as the fraction of files that changed between
+  // consecutive snapshots, using git diff-tree. First snapshot stays at 0.
+  await computeChurnRates(snapshots, gitRunner);
 
   return { snapshots, interval };
 }
 
 /**
- * Compute churn rates between consecutive snapshots.
- * churnRate for snapshot[i] = |totalFiles[i] - totalFiles[i-1]| / totalFiles[i]
- * First snapshot has churnRate = 0.
+ * Compute churn rates between consecutive snapshots using `git diff-tree`.
+ *
+ * For each snapshot pair (prev, curr) with both commit hashes available:
+ *     churnRate = filesChanged / max(curr.totalFiles, 1)
+ *
+ * filesChanged is the number of distinct paths returned by
+ * `git diff-tree -r --name-only <prev> <curr>` — that is, every blob added,
+ * deleted, modified, or renamed between the two commits.
+ *
+ * Snapshots without a commit hash (synthetic fixtures, or rev-list misses)
+ * keep churnRate = 0. The first snapshot has no predecessor, so it also
+ * stays at 0. Failures are non-fatal: if a diff-tree call fails, that
+ * snapshot's churnRate is left at 0 and the rest continue.
  */
-export function computeChurnRates(snapshots: ComplexitySnapshot[]): void {
-  if (snapshots.length === 0) return;
+export async function computeChurnRates(
+  snapshots: ComplexitySnapshot[],
+  gitRunner?: GitRunner,
+): Promise<void> {
+  if (snapshots.length < 2) return;
 
-  // First snapshot has no previous reference, churnRate stays 0
   for (let i = 1; i < snapshots.length; i++) {
     const prev = snapshots[i - 1];
     const curr = snapshots[i];
 
-    if (curr.totalFiles === 0) {
+    if (!gitRunner || !prev.commitHash || !curr.commitHash || prev.commitHash === curr.commitHash) {
       curr.churnRate = 0;
-    } else {
-      const filesChanged = Math.abs(curr.totalFiles - prev.totalFiles);
-      curr.churnRate = filesChanged / curr.totalFiles;
+      continue;
+    }
+
+    try {
+      const raw = await gitRunner.exec(diffTreeNames(prev.commitHash, curr.commitHash));
+      const filesChanged = countChangedPaths(raw);
+      const denominator = Math.max(curr.totalFiles, 1);
+      curr.churnRate = filesChanged / denominator;
+    } catch {
+      // Best-effort: leave at 0 on diff-tree failure, do not abort the run
+      curr.churnRate = 0;
     }
   }
+}
+
+/** Count distinct non-empty path lines in `git diff-tree --name-only` output. */
+function countChangedPaths(output: string): number {
+  const seen = new Set<string>();
+  for (const line of output.split('\n')) {
+    const path = line.trim();
+    if (path) seen.add(path);
+  }
+  return seen.size;
 }

@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 9: Read-only analysis safety
+// Feature: git-xray, Property 9: Read-only analysis safety
 // For any set of CommandFilters, all git command builder functions should never
 // produce args containing mutating commands (checkout, reset, merge, rebase,
 // commit, stash, clean).
@@ -15,6 +15,7 @@ import {
   revListSnapshot,
   mergeLog,
   firstParentLog,
+  diffTreeNames,
   type CommandFilters,
 } from '../../src/git/commands.js';
 
@@ -67,6 +68,7 @@ describe('Property 9: Read-only analysis safety', () => {
         assertNoMutatingCommands(revListSnapshot(date1, date2, branch));
         assertNoMutatingCommands(mergeLog(filters));
         assertNoMutatingCommands(firstParentLog(filters));
+        assertNoMutatingCommands(diffTreeNames(treeIsh, treeIsh));
       }),
       { numRuns: 100 },
     );

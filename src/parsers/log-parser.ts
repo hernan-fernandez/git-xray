@@ -1,7 +1,10 @@
 // Parses git log output into commit records
-// Format: %H|%aN|%aE|%aI|%s|%P (pipe-delimited, parentHashes space-separated)
+// Format: %H<US>%aN<US>%aE<US>%aI<US>%s<US>%P (unit-separator-delimited).
+// The U+001F separator cannot appear in commit metadata, so author names or
+// subjects containing "|" are parsed correctly.
 
 import { Transform, TransformCallback } from 'node:stream';
+import { FIELD_SEP } from '../git/commands.js';
 
 export interface CommitRecord {
   hash: string;
@@ -44,7 +47,7 @@ export class LogParser extends Transform {
     const trimmed = line.trim();
     if (!trimmed) return;
 
-    const parts = trimmed.split('|');
+    const parts = trimmed.split(FIELD_SEP);
     if (parts.length < 5) return;
 
     const hash = parts[0];

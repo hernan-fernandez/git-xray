@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 11: Time-decay weighting correctness
+// Feature: git-xray, Property 11: Time-decay weighting correctness
 // For any commit age in months, the weight should be in [0.1, 1.0].
 // age <= 12: weight = 1.0, age > 36: weight = 0.1,
 // 12 < age <= 36: weight = 1.0 - 0.9 * (age - 12) / 24

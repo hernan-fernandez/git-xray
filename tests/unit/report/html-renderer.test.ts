@@ -93,10 +93,10 @@ describe('renderHtmlReport', () => {
     expect(html).not.toMatch(/<img[^>]+src\s*=\s*["']https?:\/\//i);
   });
 
-  it('should contain the serialized ReportData with window.__GITPEEK_DATA__', async () => {
+  it('should contain the serialized ReportData with window.__GIT_XRAY_DATA__', async () => {
     const data = makeSampleReportData();
     const html = await renderHtmlReport(data);
-    expect(html).toContain('window.__GITPEEK_DATA__');
+    expect(html).toContain('window.__GIT_XRAY_DATA__');
     expect(html).toContain('"repoName":"test-repo"');
     expect(html).toContain('"analyzedBranch":"main"');
   });

@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 14: Merges-per-month completeness
+// Feature: git-xray, Property 14: Merges-per-month completeness
 // For any set of merge records, the sum of all merges-per-month counts
 // should equal totalMerges.
 // **Validates: Requirements 6.3**

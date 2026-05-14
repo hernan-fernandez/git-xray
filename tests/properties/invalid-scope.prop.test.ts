@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 20: Invalid scope rejection
+// Feature: git-xray, Property 20: Invalid scope rejection
 // For any scope path that doesn't match any file in a set of file records,
 // parseLsTreeOutput should return zero files. Tests that a non-matching scope
 // produces an empty result.

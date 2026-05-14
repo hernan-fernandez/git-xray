@@ -216,4 +216,43 @@ describe('analyzeBusFactor', () => {
     // With late ref, Alice gets minimum weight
     expect(resultLate.overall.topAuthors[0].weightedCommits).toBeCloseTo(0.1, 1);
   });
+
+  it('restricts perDirectory and singlePointRisks to the scope when provided', () => {
+    // Two file changes inside src/ (Alice-only) and one inside docs/ (Alice-only).
+    // Scope src/ must drop the docs/ entries from per-directory and risks.
+    const commits = [makeCommit()];
+    const fileChanges = [
+      makeFileChange({ filePath: 'src/a.ts', author: 'Alice', commitHash: 'h1', date: new Date('2024-03-01T00:00:00Z') }),
+      makeFileChange({ filePath: 'src/a.ts', author: 'Alice', commitHash: 'h2', date: new Date('2024-04-01T00:00:00Z') }),
+      makeFileChange({ filePath: 'docs/b.md', author: 'Alice', commitHash: 'h3', date: new Date('2024-03-15T00:00:00Z') }),
+      makeFileChange({ filePath: 'docs/b.md', author: 'Alice', commitHash: 'h4', date: new Date('2024-04-15T00:00:00Z') }),
+    ];
+
+    const unscoped = analyzeBusFactor(commits, fileChanges, REF_DATE);
+    const scoped = analyzeBusFactor(commits, fileChanges, REF_DATE, 'src');
+
+    // Unscoped: both directories present
+    expect([...unscoped.perDirectory.keys()].sort()).toEqual(['docs', 'src']);
+    expect(unscoped.singlePointRisks.map((r) => r.filePath).sort()).toEqual(['docs/b.md', 'src/a.ts']);
+
+    // Scoped to src/: only src in perDirectory, only src/a.ts in risks
+    expect([...scoped.perDirectory.keys()]).toEqual(['src']);
+    expect(scoped.singlePointRisks.map((r) => r.filePath)).toEqual(['src/a.ts']);
+  });
+
+  it('treats scope as a path-segment match, not a raw prefix', () => {
+    // src2/foo.ts must NOT be matched by scope "src" — segment boundary required.
+    const commits = [makeCommit()];
+    const fileChanges = [
+      makeFileChange({ filePath: 'src/a.ts', author: 'Alice', commitHash: 'h1', date: new Date('2024-03-01T00:00:00Z') }),
+      makeFileChange({ filePath: 'src/a.ts', author: 'Alice', commitHash: 'h2', date: new Date('2024-04-01T00:00:00Z') }),
+      makeFileChange({ filePath: 'src2/b.ts', author: 'Alice', commitHash: 'h3', date: new Date('2024-03-15T00:00:00Z') }),
+      makeFileChange({ filePath: 'src2/b.ts', author: 'Alice', commitHash: 'h4', date: new Date('2024-04-15T00:00:00Z') }),
+    ];
+
+    const scoped = analyzeBusFactor(commits, fileChanges, REF_DATE, 'src');
+
+    expect([...scoped.perDirectory.keys()]).toEqual(['src']);
+    expect(scoped.singlePointRisks.map((r) => r.filePath)).toEqual(['src/a.ts']);
+  });
 });

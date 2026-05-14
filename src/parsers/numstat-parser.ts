@@ -1,8 +1,11 @@
 // Parses --numstat output into file change records
-// Format: header line "%H|%aN|%aI", then "added\tremoved\tfilepath" lines per commit,
-// blank line between commits. Binary files show "-\t-\tfilepath".
+// Format: header line "%H<US>%aN<US>%aI", then "added\tremoved\tfilepath" lines
+// per commit, blank line between commits. Binary files show "-\t-\tfilepath".
+// Header lines are distinguished from numstat lines by the unit-separator,
+// which cannot appear in numstat content.
 
 import { Transform, TransformCallback } from 'node:stream';
+import { FIELD_SEP } from '../git/commands.js';
 
 export interface FileChangeRecord {
   commitHash: string;
@@ -46,9 +49,9 @@ export class NumstatParser extends Transform {
     const trimmed = line.trim();
     if (!trimmed) return;
 
-    // Check if this is a header line (pipe-delimited: hash|author|date)
-    if (trimmed.includes('|') && !trimmed.includes('\t')) {
-      const parts = trimmed.split('|');
+    // Header line: "%H<US>%aN<US>%aI" — contains the unit-separator and no tab.
+    if (trimmed.includes(FIELD_SEP) && !trimmed.includes('\t')) {
+      const parts = trimmed.split(FIELD_SEP);
       if (parts.length >= 3) {
         this.currentHash = parts[0];
         this.currentAuthor = parts[1];

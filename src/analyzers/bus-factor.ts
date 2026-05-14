@@ -1,9 +1,10 @@
 // Bus factor calculation
-// Pure function: (commits, fileChanges, referenceDate) => BusFactorData
+// Pure function: (commits, fileChanges, referenceDate, scope?) => BusFactorData
 
 import type { CommitRecord } from '../parsers/log-parser.js';
 import type { FileChangeRecord } from '../parsers/numstat-parser.js';
 import { timeDecayWeight, getAgeInMonths } from '../utils/time-decay.js';
+import { pathInScope } from '../utils/path-scope.js';
 
 export interface BusFactorResult {
   scope: string;
@@ -96,12 +97,22 @@ function getTopLevelDir(filePath: string): string {
  * @param commits - Parsed commit records (author identity resolved via .mailmap through %aN/%aE)
  * @param fileChanges - Parsed file change records
  * @param referenceDate - The --until date or current system time
+ * @param scope - Optional path-scope filter; only file changes inside this
+ *                directory contribute to per-directory bus factors and
+ *                single-point risks. Overall bus factor uses commits as-is
+ *                because commit-level scoping is already applied upstream by
+ *                the git command builders.
  */
 export function analyzeBusFactor(
   commits: CommitRecord[],
   fileChanges: FileChangeRecord[],
   referenceDate: Date,
+  scope?: string,
 ): BusFactorData {
+  const scopedFileChanges = scope
+    ? fileChanges.filter((fc) => pathInScope(fc.filePath, scope))
+    : fileChanges;
+
   // --- Overall bus factor: weighted commit counts per author ---
   const overallWeights = new Map<string, number>();
 
@@ -117,10 +128,10 @@ export function analyzeBusFactor(
 
   // --- Per-directory bus factor ---
   // Build a map: directory → (author → weighted commit count)
-  // We derive directory from file change records
+  // We derive directory from file change records (already scope-filtered)
   const dirAuthorWeights = new Map<string, Map<string, number>>();
 
-  for (const fc of fileChanges) {
+  for (const fc of scopedFileChanges) {
     const dir = getTopLevelDir(fc.filePath);
     let authorMap = dirAuthorWeights.get(dir);
     if (!authorMap) {
@@ -145,7 +156,7 @@ export function analyzeBusFactor(
   // Track all-time changes per file per author for percentage calculation
   const fileAllTimeChanges = new Map<string, Map<string, { count: number; earliest: Date; latest: Date }>>();
 
-  for (const fc of fileChanges) {
+  for (const fc of scopedFileChanges) {
     // Track all-time stats
     let authorStats = fileAllTimeChanges.get(fc.filePath);
     if (!authorStats) {

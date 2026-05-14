@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 18: Date range filtering correctness
+// Feature: git-xray, Property 18: Date range filtering correctness
 // For any set of CLI args with --since and --until, parseConfig correctly
 // parses the date flags, and commits can be filtered by the resulting dates.
 // **Validates: Requirements 10.1, 10.2**

@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 16: Report data truncation and JSON completeness
+// Feature: git-xray, Property 16: Report data truncation and JSON completeness
 // For any ReportData where hotspots exceed 100 or contributors exceed 50,
 // truncateForHtml should produce at most 100 hotspots and 50 contributors.
 // The original (JSON) data should remain untruncated.

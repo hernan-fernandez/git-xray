@@ -7,7 +7,7 @@ import { writeFile } from 'node:fs/promises';
 import { exec } from 'node:child_process';
 import { basename } from 'node:path';
 
-import type { GitPeekConfig } from './config.js';
+import type { GitXrayConfig } from './config.js';
 import type { GitRunner } from './git/runner.js';
 import { GitCommandRunner } from './git/runner.js';
 import {
@@ -116,9 +116,9 @@ export function parseNameStatusOutput(raw: string): NameStatusCommit[] {
 }
 
 /**
- * Build CommandFilters from GitPeekConfig.
+ * Build CommandFilters from GitXrayConfig.
  */
-function buildFilters(config: GitPeekConfig): CommandFilters {
+function buildFilters(config: GitXrayConfig): CommandFilters {
   return {
     since: config.since,
     until: config.until,
@@ -179,7 +179,7 @@ function openInBrowser(filePath: string): void {
  * Each phase is wrapped in try/catch for graceful degradation.
  * After all phases, results are aggregated and rendered.
  */
-export async function runAnalysis(config: GitPeekConfig): Promise<void> {
+export async function runAnalysis(config: GitXrayConfig): Promise<void> {
   const gitRunner: GitRunner = new GitCommandRunner(config.repoPath);
   const filters = buildFilters(config);
   const repoName = config.repoDisplayName || basename(config.repoPath);
@@ -215,6 +215,18 @@ export async function runAnalysis(config: GitPeekConfig): Promise<void> {
     }
   }
 
+  // Phases 1 and 2 share no input — kick off the hotspot raw-fetch in parallel
+  // with the contribution streams, then post-process once both finish. The
+  // `commitAuthors` map (built from contribution-phase commits) is the only
+  // data dependency between them, and it is applied after both raw fetches
+  // complete. Progress UI is owned by phase 2's startPhase/endPhase below;
+  // we don't surface a separate progress line for the background fetch.
+  let hotspotRawError: Error | undefined;
+  const hotspotRawPromise = gitRunner.exec(hotspotLog(filters)).catch((err) => {
+    hotspotRawError = err as Error;
+    return '';
+  });
+
   // Phase 1: Contributions
   try {
     startPhase('Analyzing contributions...');
@@ -240,15 +252,22 @@ export async function runAnalysis(config: GitPeekConfig): Promise<void> {
     }
   }
 
-  // Phase 2: Hotspots
+  // Phase 2: Hotspots (raw fetch was kicked off above; finish post-processing now)
   try {
     startPhase('Detecting code hotspots...');
-    const hotspotRaw = await gitRunner.exec(hotspotLog(filters));
+    const hotspotRaw = await hotspotRawPromise;
+    if (hotspotRawError) throw hotspotRawError;
+
     const nameStatusCommits = parseNameStatusOutput(hotspotRaw);
+
+    // Build commitHash → author map from contribution-phase commits so the
+    // hotspot pass can populate uniqueAuthors without a second git call.
+    const commitAuthors = new Map<string, string>();
+    for (const c of commits) commitAuthors.set(c.hash, c.author);
 
     hotspots = await analyzeHotspots(
       nameStatusCommits,
-      { followRenames: config.followRenames, totalCommits: commits.length },
+      { followRenames: config.followRenames, totalCommits: commits.length, commitAuthors },
       gitRunner,
       filters,
     );
@@ -312,7 +331,7 @@ export async function runAnalysis(config: GitPeekConfig): Promise<void> {
   try {
     startPhase('Calculating bus factor...');
     const referenceDate = config.until ?? new Date();
-    busFactor = analyzeBusFactor(commits, fileChanges, referenceDate);
+    busFactor = analyzeBusFactor(commits, fileChanges, referenceDate, config.scope);
     endPhase();
   } catch (err) {
     endPhase();
@@ -409,9 +428,11 @@ export async function runAnalysis(config: GitPeekConfig): Promise<void> {
   const html = await renderHtmlReport(htmlData);
   await writeFile(config.output, html, 'utf-8');
 
-  // Render terminal report
-  const terminalOutput = renderTerminalReport(reportData, config.noColor);
-  process.stdout.write(terminalOutput);
+  // Render terminal report (unless --quiet was passed)
+  if (!config.quiet) {
+    const terminalOutput = renderTerminalReport(reportData, config.noColor);
+    process.stdout.write(terminalOutput);
+  }
 
   // Optionally write JSON
   if (config.json) {

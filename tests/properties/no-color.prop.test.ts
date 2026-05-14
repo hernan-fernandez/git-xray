@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 17: No-color output correctness
+// Feature: git-xray, Property 17: No-color output correctness
 // For any ReportData rendered with renderTerminalReport(data, true),
 // the output should contain zero ANSI escape sequences (no \x1b[ patterns).
 // **Validates: Requirements 8.3**

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MergeParser, MergeRecord } from '../../../src/parsers/merge-parser.js';
+import { FIELD_SEP } from '../../../src/git/commands.js';
 
 function collectRecords(parser: MergeParser): Promise<MergeRecord[]> {
   return new Promise((resolve, reject) => {
@@ -10,12 +11,17 @@ function collectRecords(parser: MergeParser): Promise<MergeRecord[]> {
   });
 }
 
+/** Build a merge log line: "%H<US>%aI<US>%P<US>%s". */
+function mergeLine(hash: string, date: string, parents: string, message: string): string {
+  return [hash, date, parents, message].join(FIELD_SEP);
+}
+
 describe('MergeParser', () => {
   it('parses a merge commit line', async () => {
     const parser = new MergeParser();
     const promise = collectRecords(parser);
 
-    parser.write('abc123|2024-01-15T10:30:00Z|parent1 parent2|Merge branch feature\n');
+    parser.write(mergeLine('abc123', '2024-01-15T10:30:00Z', 'parent1 parent2', 'Merge branch feature') + '\n');
     parser.end();
 
     const records = await promise;
@@ -26,11 +32,13 @@ describe('MergeParser', () => {
     expect(records[0].message).toBe('Merge branch feature');
   });
 
-  it('handles message containing pipes', async () => {
+  it('preserves pipe characters in merge messages', async () => {
+    // Subjects like "Merge: fix|refactor" used to break the pipe-delimited
+    // parser; the U+001F separator handles them as regular text.
     const parser = new MergeParser();
     const promise = collectRecords(parser);
 
-    parser.write('abc123|2024-01-15T10:30:00Z|p1 p2|Merge: fix|refactor\n');
+    parser.write(mergeLine('abc123', '2024-01-15T10:30:00Z', 'p1 p2', 'Merge: fix|refactor') + '\n');
     parser.end();
 
     const records = await promise;
@@ -42,10 +50,11 @@ describe('MergeParser', () => {
     const parser = new MergeParser();
     const promise = collectRecords(parser);
 
-    const input = [
-      'aaa|2024-01-01T00:00:00Z|p1 p2|Merge 1',
-      'bbb|2024-01-02T00:00:00Z|p3 p4|Merge 2',
-    ].join('\n') + '\n';
+    const input =
+      [
+        mergeLine('aaa', '2024-01-01T00:00:00Z', 'p1 p2', 'Merge 1'),
+        mergeLine('bbb', '2024-01-02T00:00:00Z', 'p3 p4', 'Merge 2'),
+      ].join('\n') + '\n';
 
     parser.write(input);
     parser.end();
@@ -60,8 +69,10 @@ describe('MergeParser', () => {
     const parser = new MergeParser();
     const promise = collectRecords(parser);
 
-    parser.write('abc123|2024-01-15T10:');
-    parser.write('30:00Z|p1 p2|Merge msg\n');
+    const full = mergeLine('abc123', '2024-01-15T10:30:00Z', 'p1 p2', 'Merge msg') + '\n';
+    const split = Math.floor(full.length / 2);
+    parser.write(full.slice(0, split));
+    parser.write(full.slice(split));
     parser.end();
 
     const records = await promise;
@@ -73,7 +84,7 @@ describe('MergeParser', () => {
     const parser = new MergeParser();
     const promise = collectRecords(parser);
 
-    parser.write('abc123|2024-01-15T10:30:00Z|p1 p2 p3|Octopus merge\n');
+    parser.write(mergeLine('abc123', '2024-01-15T10:30:00Z', 'p1 p2 p3', 'Octopus merge') + '\n');
     parser.end();
 
     const records = await promise;
@@ -85,7 +96,7 @@ describe('MergeParser', () => {
     const parser = new MergeParser();
     const promise = collectRecords(parser);
 
-    parser.write('abc123|2024-01-15T10:30:00Z|p1 p2|Merge msg');
+    parser.write(mergeLine('abc123', '2024-01-15T10:30:00Z', 'p1 p2', 'Merge msg'));
     parser.end();
 
     const records = await promise;

@@ -49,7 +49,7 @@ function minifyHtml(html: string): string {
  *
  * - Reads the HTML template from disk
  * - Inlines the ECharts library JS (from node_modules)
- * - Injects the serialized ReportData as window.__GITPEEK_DATA__
+ * - Injects the serialized ReportData as window.__GIT_XRAY_DATA__
  * - Minifies the final output
  * - Returns a string with zero external resource references
  */
@@ -66,7 +66,7 @@ export async function renderHtmlReport(reportData: ReportData): Promise<string> 
   const echartsScript = `<script>${echartsJs}</script>`;
 
   // Build the data injection script
-  const dataScript = `window.__GITPEEK_DATA__ = ${serializeReportData(reportData)};`;
+  const dataScript = `window.__GIT_XRAY_DATA__ = ${serializeReportData(reportData)};`;
 
   // Replace placeholders
   let html = template.replace(ECHARTS_PLACEHOLDER, echartsScript);

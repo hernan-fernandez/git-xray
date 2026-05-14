@@ -9,7 +9,7 @@ let repoPath: string;
 
 beforeAll(() => {
   // Create a temporary git repo for testing
-  repoPath = mkdtempSync(join(tmpdir(), 'gitpeek-test-'));
+  repoPath = mkdtempSync(join(tmpdir(), 'git-xray-test-'));
   execSync('git init', { cwd: repoPath, stdio: 'ignore' });
   execSync('git config user.email "test@test.com"', { cwd: repoPath, stdio: 'ignore' });
   execSync('git config user.name "Test"', { cwd: repoPath, stdio: 'ignore' });

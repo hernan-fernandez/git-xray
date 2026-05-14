@@ -1,5 +1,12 @@
 // Git command builders (log, shortlog, ls-tree, etc.)
 // Each builder returns a string[] of args to pass to GitRunner.
+//
+// Field separator: ASCII Unit Separator (U+001F, %x1f in git format strings).
+// Pipe-delimited formats fail when an author name or commit subject contains
+// a "|", so every multi-field record uses %x1f, which cannot appear in commit
+// metadata or filenames.
+
+export const FIELD_SEP = '\x1f';
 
 export interface CommandFilters {
   since?: Date;
@@ -33,21 +40,21 @@ function applyScopeFilter(args: string[], scope?: string): string[] {
 }
 
 /**
- * Contributions: git log --format="%H|%aN|%aE|%aI|%s|%P"
- * Pipe-delimited commit records (mailmap-resolved)
+ * Contributions: git log --format=%H<US>%aN<US>%aE<US>%aI<US>%s<US>%P
+ * Unit-separator-delimited commit records (mailmap-resolved).
  */
 export function contributionLog(filters: CommandFilters): string[] {
-  const args = ['log', '--format=%H|%aN|%aE|%aI|%s|%P'];
+  const args = ['log', '--format=%H%x1f%aN%x1f%aE%x1f%aI%x1f%s%x1f%P'];
   applyFilters(args, filters);
   return applyScopeFilter(args, filters.scope);
 }
 
 /**
- * Contributions (stats): git log --numstat --format="%H|%aN|%aI"
- * Numstat with commit headers (mailmap-resolved)
+ * Contributions (stats): git log --numstat --format=%H<US>%aN<US>%aI
+ * Numstat with unit-separator-delimited commit headers (mailmap-resolved).
  */
 export function contributionNumstat(filters: CommandFilters): string[] {
-  const args = ['log', '--numstat', '--format=%H|%aN|%aI'];
+  const args = ['log', '--numstat', '--format=%H%x1f%aN%x1f%aI'];
   applyFilters(args, filters);
   return applyScopeFilter(args, filters.scope);
 }
@@ -104,11 +111,19 @@ export function revListSnapshot(afterDate: Date, beforeDate: Date, branch: strin
 }
 
 /**
- * PR Velocity: git log --merges --format="%H|%aI|%P|%s"
- * Merge commit records
+ * Complexity (churn): git diff-tree -r --name-only <prev> <curr>
+ * Lists every blob path that differs between two commits.
+ */
+export function diffTreeNames(prevCommit: string, currCommit: string): string[] {
+  return ['diff-tree', '-r', '--name-only', prevCommit, currCommit];
+}
+
+/**
+ * PR Velocity: git log --merges --format=%H<US>%aI<US>%P<US>%s
+ * Unit-separator-delimited merge commit records.
  */
 export function mergeLog(filters: CommandFilters): string[] {
-  const args = ['log', '--merges', '--format=%H|%aI|%P|%s'];
+  const args = ['log', '--merges', '--format=%H%x1f%aI%x1f%P%x1f%s'];
   applyFilters(args, filters);
   return applyScopeFilter(args, filters.scope);
 }

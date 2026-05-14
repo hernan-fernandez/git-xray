@@ -64,7 +64,7 @@ import { renderHtmlReport } from '../../src/report/html-renderer.js';
 import { renderTerminalReport } from '../../src/report/terminal-renderer.js';
 import { writeJsonReport } from '../../src/report/json-writer.js';
 import { writeFile } from 'node:fs/promises';
-import type { GitPeekConfig } from '../../src/config.js';
+import type { GitXrayConfig } from '../../src/config.js';
 
 /**
  * Create a readable stream from a string.
@@ -76,7 +76,7 @@ function stringStream(content: string): Readable {
 /**
  * Build a minimal config for testing.
  */
-function testConfig(overrides: Partial<GitPeekConfig> = {}): GitPeekConfig {
+function testConfig(overrides: Partial<GitXrayConfig> = {}): GitXrayConfig {
   return {
     repoPath: '/tmp/test-repo',
     followRenames: false,
@@ -84,22 +84,26 @@ function testConfig(overrides: Partial<GitPeekConfig> = {}): GitPeekConfig {
     noOpen: true,
     noColor: true,
     json: false,
+    quiet: false,
     ...overrides,
   };
 }
 
-// Sample git log output (contribution log format: %H|%aN|%aE|%aI|%s|%P)
+// Field separator used in real git output (--format uses %x1f / U+001F).
+const US = '\x1f';
+
+// Sample git log output (contribution log format: %H<US>%aN<US>%aE<US>%aI<US>%s<US>%P)
 const SAMPLE_LOG = [
-  'aaa0000000000000000000000000000000000001|Alice|alice@test.com|2024-06-01T10:00:00Z|Initial commit|',
-  'aaa0000000000000000000000000000000000002|Bob|bob@test.com|2024-06-15T14:00:00Z|Add feature|aaa0000000000000000000000000000000000001',
+  ['aaa0000000000000000000000000000000000001', 'Alice', 'alice@test.com', '2024-06-01T10:00:00Z', 'Initial commit', ''].join(US),
+  ['aaa0000000000000000000000000000000000002', 'Bob', 'bob@test.com', '2024-06-15T14:00:00Z', 'Add feature', 'aaa0000000000000000000000000000000000001'].join(US),
 ].join('\n');
 
-// Sample numstat output
+// Sample numstat output (header format: %H<US>%aN<US>%aI)
 const SAMPLE_NUMSTAT = [
-  'aaa0000000000000000000000000000000000001|Alice|2024-06-01T10:00:00Z',
+  ['aaa0000000000000000000000000000000000001', 'Alice', '2024-06-01T10:00:00Z'].join(US),
   '10\t0\tsrc/index.ts',
   '',
-  'aaa0000000000000000000000000000000000002|Bob|2024-06-15T14:00:00Z',
+  ['aaa0000000000000000000000000000000000002', 'Bob', '2024-06-15T14:00:00Z'].join(US),
   '5\t2\tsrc/index.ts',
   '20\t0\tsrc/feature.ts',
 ].join('\n');
@@ -257,6 +261,14 @@ describe('runAnalysis', () => {
 
     expect(renderTerminalReport).toHaveBeenCalledTimes(1);
     expect(process.stdout.write).toHaveBeenCalledWith('terminal output');
+  });
+
+  it('suppresses terminal report when quiet=true', async () => {
+    await runAnalysis(testConfig({ quiet: true }));
+
+    expect(renderTerminalReport).not.toHaveBeenCalled();
+    // HTML write still happens even when quiet
+    expect(renderHtmlReport).toHaveBeenCalledTimes(1);
   });
 
   it('writes JSON when config.json is true', async () => {

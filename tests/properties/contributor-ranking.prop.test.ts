@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 4: Contributor ranking correctness
+// Feature: git-xray, Property 4: Contributor ranking correctness
 // For any set of AuthorSummary[], the top-N contributors list should be sorted
 // in non-increasing order by commit count, and its length should be min(N, totalAuthors).
 // **Validates: Requirements 2.3, 2.4**

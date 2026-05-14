@@ -24,7 +24,7 @@ describe('Git command builders', () => {
     it('should build basic contribution log args', () => {
       const args = contributionLog(emptyFilters);
       expect(args).toContain('log');
-      expect(args).toContain('--format=%H|%aN|%aE|%aI|%s|%P');
+      expect(args).toContain('--format=%H%x1f%aN%x1f%aE%x1f%aI%x1f%s%x1f%P');
     });
 
     it('should use mailmap-resolved format specifiers (%aN, %aE)', () => {
@@ -32,8 +32,10 @@ describe('Git command builders', () => {
       const format = args.find(a => a.startsWith('--format='))!;
       expect(format).toContain('%aN');
       expect(format).toContain('%aE');
-      expect(format).not.toContain('%an|');
-      expect(format).not.toContain('%ae|');
+      expect(format).toContain('%x1f');
+      // Mailmap-resolved %aN should never appear next to the abbreviated %an form
+      expect(format).not.toContain('%an%x1f');
+      expect(format).not.toContain('%ae%x1f');
     });
 
     it('should apply all filters', () => {
@@ -128,7 +130,7 @@ describe('Git command builders', () => {
       const args = mergeLog(emptyFilters);
       expect(args).toContain('log');
       expect(args).toContain('--merges');
-      expect(args).toContain('--format=%H|%aI|%P|%s');
+      expect(args).toContain('--format=%H%x1f%aI%x1f%P%x1f%s');
     });
 
     it('should apply filters', () => {

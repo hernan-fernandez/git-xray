@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { NumstatParser, FileChangeRecord } from '../../../src/parsers/numstat-parser.js';
+import { FIELD_SEP } from '../../../src/git/commands.js';
 
 function collectRecords(parser: NumstatParser): Promise<FileChangeRecord[]> {
   return new Promise((resolve, reject) => {
@@ -10,13 +11,18 @@ function collectRecords(parser: NumstatParser): Promise<FileChangeRecord[]> {
   });
 }
 
+/** Build a numstat header line: "%H<US>%aN<US>%aI". */
+function numstatHeader(hash: string, author: string, date: string): string {
+  return [hash, author, date].join(FIELD_SEP);
+}
+
 describe('NumstatParser', () => {
   it('parses a commit header followed by numstat lines', async () => {
     const parser = new NumstatParser();
     const promise = collectRecords(parser);
 
     const input = [
-      'abc123|Alice|2024-01-15T10:30:00Z',
+      numstatHeader('abc123', 'Alice', '2024-01-15T10:30:00Z'),
       '10\t5\tsrc/index.ts',
       '3\t1\tsrc/utils.ts',
       '',
@@ -45,7 +51,7 @@ describe('NumstatParser', () => {
     const promise = collectRecords(parser);
 
     const input = [
-      'abc123|Alice|2024-01-15T10:30:00Z',
+      numstatHeader('abc123', 'Alice', '2024-01-15T10:30:00Z'),
       '-\t-\timage.png',
       '',
     ].join('\n');
@@ -65,10 +71,10 @@ describe('NumstatParser', () => {
     const promise = collectRecords(parser);
 
     const input = [
-      'aaa|Alice|2024-01-01T00:00:00Z',
+      numstatHeader('aaa', 'Alice', '2024-01-01T00:00:00Z'),
       '5\t2\tfile1.ts',
       '',
-      'bbb|Bob|2024-01-02T00:00:00Z',
+      numstatHeader('bbb', 'Bob', '2024-01-02T00:00:00Z'),
       '8\t0\tfile2.ts',
       '',
     ].join('\n');
@@ -88,7 +94,7 @@ describe('NumstatParser', () => {
     const parser = new NumstatParser();
     const promise = collectRecords(parser);
 
-    parser.write('abc123|Alice|2024-01-15T10:30:00Z\n10\t5\tsrc/in');
+    parser.write(numstatHeader('abc123', 'Alice', '2024-01-15T10:30:00Z') + '\n10\t5\tsrc/in');
     parser.write('dex.ts\n');
     parser.end();
 
@@ -101,12 +107,34 @@ describe('NumstatParser', () => {
     const parser = new NumstatParser();
     const promise = collectRecords(parser);
 
-    const input = 'abc123|Alice|2024-01-15T10:30:00Z\n5\t3\tpath/with\ttab.ts\n';
+    const input =
+      numstatHeader('abc123', 'Alice', '2024-01-15T10:30:00Z') + '\n5\t3\tpath/with\ttab.ts\n';
     parser.write(input);
     parser.end();
 
     const records = await promise;
     expect(records).toHaveLength(1);
     expect(records[0].filePath).toBe('path/with\ttab.ts');
+  });
+
+  it('preserves pipe characters in author names', async () => {
+    // Pipes used to be the field separator; this regression test guards the
+    // U+001F-based format so authors named "A|ice" parse correctly.
+    const parser = new NumstatParser();
+    const promise = collectRecords(parser);
+
+    const input = [
+      numstatHeader('abc123', 'A|ice', '2024-01-15T10:30:00Z'),
+      '4\t2\tsrc/a.ts',
+      '',
+    ].join('\n');
+
+    parser.write(input);
+    parser.end();
+
+    const records = await promise;
+    expect(records).toHaveLength(1);
+    expect(records[0].author).toBe('A|ice');
+    expect(records[0].linesAdded).toBe(4);
   });
 });

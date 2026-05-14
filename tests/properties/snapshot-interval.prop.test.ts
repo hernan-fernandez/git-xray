@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 7: Complexity snapshot interval correctness
+// Feature: git-xray, Property 7: Complexity snapshot interval correctness
 // For any date range, determineInterval returns 'monthly' for ≥3 months,
 // 'weekly' for <3 months. And generateSnapshotDates produces dates with
 // appropriate spacing.

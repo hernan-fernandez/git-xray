@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 
 describe('validateRepo', () => {
   it('returns valid for a directory with a .git folder', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'gitpeek-test-'));
+    const dir = await mkdtemp(join(tmpdir(), 'git-xray-test-'));
     await mkdir(join(dir, '.git'));
     try {
       const result = await validateRepo(dir);
@@ -17,7 +17,7 @@ describe('validateRepo', () => {
   });
 
   it('returns invalid for a directory without .git', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'gitpeek-test-'));
+    const dir = await mkdtemp(join(tmpdir(), 'git-xray-test-'));
     try {
       const result = await validateRepo(dir);
       expect(result.valid).toBe(false);
@@ -30,7 +30,7 @@ describe('validateRepo', () => {
   });
 
   it('returns invalid when .git is a file, not a directory', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'gitpeek-test-'));
+    const dir = await mkdtemp(join(tmpdir(), 'git-xray-test-'));
     await writeFile(join(dir, '.git'), 'not a directory');
     try {
       const result = await validateRepo(dir);
@@ -41,7 +41,7 @@ describe('validateRepo', () => {
   });
 
   it('returns invalid for a non-existent path', async () => {
-    const result = await validateRepo('/tmp/definitely-does-not-exist-gitpeek');
+    const result = await validateRepo('/tmp/definitely-does-not-exist-git-xray');
     expect(result.valid).toBe(false);
     if (!result.valid) {
       expect(result.error).toContain('Not a git repository');
@@ -59,7 +59,7 @@ describe('validateGitBinary', () => {
 
 describe('validate', () => {
   it('returns valid for a directory with .git and git on PATH', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'gitpeek-test-'));
+    const dir = await mkdtemp(join(tmpdir(), 'git-xray-test-'));
     await mkdir(join(dir, '.git'));
     try {
       const result = await validate(dir);
@@ -70,7 +70,7 @@ describe('validate', () => {
   });
 
   it('returns invalid for a non-git directory even if git is on PATH', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'gitpeek-test-'));
+    const dir = await mkdtemp(join(tmpdir(), 'git-xray-test-'));
     try {
       const result = await validate(dir);
       expect(result.valid).toBe(false);

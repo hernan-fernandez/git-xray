@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 2: Contribution aggregation invariant
+// Feature: git-xray, Property 2: Contribution aggregation invariant
 // For any set of CommitRecord[] and FileChangeRecord[], the sum of per-author
 // commit counts should equal totalCommits, and the sum of per-author linesAdded/
 // linesRemoved should equal the global totals from fileChanges.

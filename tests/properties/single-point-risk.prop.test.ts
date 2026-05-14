@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 12: Single-point-of-knowledge detection
+// Feature: git-xray, Property 12: Single-point-of-knowledge detection
 // For any set of FileChangeRecord[] and a reference date, a file should appear
 // in singlePointRisks iff it has exactly 1 distinct author in the last 12 months.
 // **Validates: Requirements 5.5**

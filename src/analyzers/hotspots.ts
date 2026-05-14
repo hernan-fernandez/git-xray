@@ -32,6 +32,12 @@ export interface NameStatusCommit {
 export interface HotspotConfig {
   followRenames: boolean;
   totalCommits: number;
+  /**
+   * Optional commitHash → author lookup. When provided, populates
+   * uniqueAuthors per file. Built from contribution-phase commit records;
+   * missing entries fall back to leaving the file's author set empty.
+   */
+  commitAuthors?: Map<string, string>;
 }
 
 const TOP_N = 20;
@@ -40,14 +46,17 @@ const FOLLOW_CONCURRENCY = 5;
 
 /**
  * Phase 1: Compute change frequencies from name-status commit records.
- * Counts distinct commits per file path.
+ * Counts distinct commits per file path. When commitAuthors is provided,
+ * also collects the unique author set per file.
  */
 export function computeChangeFrequencies(
   commits: NameStatusCommit[],
+  commitAuthors?: Map<string, string>,
 ): Map<string, { changeCount: number; authors: Set<string> }> {
   const fileMap = new Map<string, { changeCount: number; authors: Set<string> }>();
 
   for (const commit of commits) {
+    const author = commitAuthors?.get(commit.commitHash);
     // Track which files appear in this commit (deduplicate within a single commit)
     const seenInCommit = new Set<string>();
     for (const file of commit.files) {
@@ -60,6 +69,7 @@ export function computeChangeFrequencies(
         fileMap.set(file.filePath, entry);
       }
       entry.changeCount++;
+      if (author) entry.authors.add(author);
     }
   }
 
@@ -105,8 +115,8 @@ export async function analyzeHotspots(
   gitRunner?: GitRunner,
   filters?: CommandFilters,
 ): Promise<HotspotData> {
-  // Phase 1: compute change frequencies
-  const fileMap = computeChangeFrequencies(commits);
+  // Phase 1: compute change frequencies (and unique-author sets when available)
+  const fileMap = computeChangeFrequencies(commits, config.commitAuthors);
 
   // Build initial hotspot list sorted by change count descending
   let hotspots: FileHotspot[] = Array.from(fileMap.entries())

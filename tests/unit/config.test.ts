@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseConfig, ConfigError } from '../../src/config.js';
+import { parseConfig, ConfigError, HelpRequested } from '../../src/config.js';
 
 // Helper: simulate process.argv with node + script prefix
 function argv(...args: string[]): string[] {
@@ -15,6 +15,7 @@ describe('parseConfig', () => {
     expect(config.noOpen).toBe(false);
     expect(config.noColor).toBe(false);
     expect(config.json).toBe(false);
+    expect(config.quiet).toBe(false);
     expect(config.branch).toBeUndefined();
     expect(config.since).toBeUndefined();
     expect(config.until).toBeUndefined();
@@ -106,5 +107,23 @@ describe('parseConfig', () => {
     } catch (e) {
       expect((e as Error).message).toContain('Usage: git-xray');
     }
+  });
+
+  it('throws HelpRequested for --help', () => {
+    expect(() => parseConfig(argv('--help'))).toThrow(HelpRequested);
+  });
+
+  it('throws HelpRequested for -h short form', () => {
+    expect(() => parseConfig(argv('-h'))).toThrow(HelpRequested);
+  });
+
+  it('parses --quiet flag', () => {
+    const config = parseConfig(argv('--quiet'));
+    expect(config.quiet).toBe(true);
+  });
+
+  it('parses -q short form for --quiet', () => {
+    const config = parseConfig(argv('-q'));
+    expect(config.quiet).toBe(true);
   });
 });

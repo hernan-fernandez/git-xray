@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 10: Bus factor threshold correctness
+// Feature: git-xray, Property 10: Bus factor threshold correctness
 // For any set of authors with weighted commit counts, the computed bus factor N
 // should satisfy: top N authors ≥ 50% of total, and top N-1 < 50%.
 // **Validates: Requirements 5.1, 5.2, 5.3**

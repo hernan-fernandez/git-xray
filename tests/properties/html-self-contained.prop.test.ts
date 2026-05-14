@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 15: HTML report self-containment
+// Feature: git-xray, Property 15: HTML report self-containment
 // For any generated ReportData, the HTML output from renderHtmlReport should
 // contain zero external resource references (no src="http" or href="http" patterns).
 // **Validates: Requirements 7.1**

@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 5: File change frequency correctness
+// Feature: git-xray, Property 5: File change frequency correctness
 // For any set of file change records, the computed change frequency for each file
 // should equal the number of distinct commit hashes that modified that file.
 // **Validates: Requirements 3.1**

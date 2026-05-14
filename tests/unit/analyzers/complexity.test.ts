@@ -5,6 +5,7 @@ import {
   parseLsTreeOutput,
   computeChurnRates,
   analyzeComplexityTrend,
+  downsampleDates,
   type ComplexitySnapshot,
   type ComplexityConfig,
 } from '../../../src/analyzers/complexity.js';
@@ -156,56 +157,171 @@ describe('parseLsTreeOutput', () => {
 });
 
 describe('computeChurnRates', () => {
-  it('sets first snapshot churnRate to 0', () => {
-    const snapshots: ComplexitySnapshot[] = [
-      { date: makeDate(2023, 1), totalFiles: 10, totalSize: 1000, churnRate: 0 },
-      { date: makeDate(2023, 2), totalFiles: 12, totalSize: 1200, churnRate: 0 },
-    ];
+  /** Build a GitRunner whose diff-tree returns the given file lists per (prev, curr) pair. */
+  function makeDiffRunner(diffOutputsByPair: Map<string, string>): GitRunner {
+    return {
+      stream: vi.fn() as any,
+      exec: vi.fn(async (args: string[]) => {
+        if (args[0] !== 'diff-tree') return '';
+        // Args: ['diff-tree', '-r', '--name-only', <prev>, <curr>]
+        const key = `${args[3]}|${args[4]}`;
+        return diffOutputsByPair.get(key) ?? '';
+      }),
+    };
+  }
 
-    computeChurnRates(snapshots);
+  it('leaves first snapshot churnRate at 0', async () => {
+    const snapshots: ComplexitySnapshot[] = [
+      { date: makeDate(2023, 1), totalFiles: 10, totalSize: 1000, churnRate: 0, commitHash: 'c1' },
+      { date: makeDate(2023, 2), totalFiles: 12, totalSize: 1200, churnRate: 0, commitHash: 'c2' },
+    ];
+    const runner = makeDiffRunner(new Map([['c1|c2', 'a.ts\nb.ts\n']]));
+
+    await computeChurnRates(snapshots, runner);
     expect(snapshots[0].churnRate).toBe(0);
   });
 
-  it('computes churnRate as |delta files| / current totalFiles', () => {
+  it('sets churnRate to filesChanged / current totalFiles using diff-tree output', async () => {
+    const snapshots: ComplexitySnapshot[] = [
+      { date: makeDate(2023, 1), totalFiles: 10, totalSize: 1000, churnRate: 0, commitHash: 'c1' },
+      { date: makeDate(2023, 2), totalFiles: 12, totalSize: 1200, churnRate: 0, commitHash: 'c2' },
+      { date: makeDate(2023, 3), totalFiles: 15, totalSize: 1500, churnRate: 0, commitHash: 'c3' },
+    ];
+    const runner = makeDiffRunner(new Map([
+      ['c1|c2', 'src/a.ts\nsrc/b.ts\nsrc/c.ts\n'],            // 3 changed paths
+      ['c2|c3', 'src/x.ts\nsrc/y.ts\nsrc/z.ts\nsrc/w.ts\n'],  // 4 changed paths
+    ]));
+
+    await computeChurnRates(snapshots, runner);
+
+    // snapshot[1]: 3 changed / 12 totalFiles
+    expect(snapshots[1].churnRate).toBeCloseTo(3 / 12);
+    // snapshot[2]: 4 changed / 15 totalFiles
+    expect(snapshots[2].churnRate).toBeCloseTo(4 / 15);
+  });
+
+  it('detects renames as churn that the old count-delta proxy missed', async () => {
+    // Same file count before and after, but every file is different — should
+    // register as 100% churn, not the 0% that |Δfiles|/files would produce.
+    const snapshots: ComplexitySnapshot[] = [
+      { date: makeDate(2023, 1), totalFiles: 5, totalSize: 500, churnRate: 0, commitHash: 'c1' },
+      { date: makeDate(2023, 2), totalFiles: 5, totalSize: 500, churnRate: 0, commitHash: 'c2' },
+    ];
+    const runner = makeDiffRunner(new Map([
+      ['c1|c2', ['old1.ts', 'old2.ts', 'old3.ts', 'old4.ts', 'old5.ts',
+                'new1.ts', 'new2.ts', 'new3.ts', 'new4.ts', 'new5.ts'].join('\n')],
+    ]));
+
+    await computeChurnRates(snapshots, runner);
+    // 10 paths changed (5 deleted + 5 added) ÷ 5 totalFiles = 2.0
+    expect(snapshots[1].churnRate).toBeCloseTo(2);
+  });
+
+  it('avoids division by zero when current totalFiles is 0', async () => {
+    const snapshots: ComplexitySnapshot[] = [
+      { date: makeDate(2023, 1), totalFiles: 5, totalSize: 500, churnRate: 0, commitHash: 'c1' },
+      { date: makeDate(2023, 2), totalFiles: 0, totalSize: 0, churnRate: 0, commitHash: 'c2' },
+    ];
+    const runner = makeDiffRunner(new Map([['c1|c2', 'a.ts\nb.ts\n']]));
+
+    await computeChurnRates(snapshots, runner);
+    // Denominator is clamped to 1, so churn = 2/1 = 2 (rare edge case, value is not nan)
+    expect(snapshots[1].churnRate).toBe(2);
+  });
+
+  it('keeps churnRate at 0 when commit hashes are missing', async () => {
+    // Synthetic snapshots without commit hashes (test fixtures, rev-list misses).
     const snapshots: ComplexitySnapshot[] = [
       { date: makeDate(2023, 1), totalFiles: 10, totalSize: 1000, churnRate: 0 },
       { date: makeDate(2023, 2), totalFiles: 12, totalSize: 1200, churnRate: 0 },
-      { date: makeDate(2023, 3), totalFiles: 15, totalSize: 1500, churnRate: 0 },
     ];
+    const runner = makeDiffRunner(new Map());
 
-    computeChurnRates(snapshots);
-
-    // snapshot[1]: |12 - 10| / 12 = 2/12
-    expect(snapshots[1].churnRate).toBeCloseTo(2 / 12);
-    // snapshot[2]: |15 - 12| / 15 = 3/15 = 0.2
-    expect(snapshots[2].churnRate).toBeCloseTo(0.2);
-  });
-
-  it('handles zero totalFiles without division error', () => {
-    const snapshots: ComplexitySnapshot[] = [
-      { date: makeDate(2023, 1), totalFiles: 5, totalSize: 500, churnRate: 0 },
-      { date: makeDate(2023, 2), totalFiles: 0, totalSize: 0, churnRate: 0 },
-    ];
-
-    computeChurnRates(snapshots);
+    await computeChurnRates(snapshots, runner);
     expect(snapshots[1].churnRate).toBe(0);
   });
 
-  it('handles empty snapshots array', () => {
+  it('keeps churnRate at 0 when prev and curr point to the same commit', async () => {
+    const snapshots: ComplexitySnapshot[] = [
+      { date: makeDate(2023, 1), totalFiles: 10, totalSize: 1000, churnRate: 0, commitHash: 'c1' },
+      { date: makeDate(2023, 2), totalFiles: 10, totalSize: 1000, churnRate: 0, commitHash: 'c1' },
+    ];
+    const runner = makeDiffRunner(new Map());
+
+    await computeChurnRates(snapshots, runner);
+    expect(snapshots[1].churnRate).toBe(0);
+  });
+
+  it('continues with churn=0 when diff-tree throws', async () => {
+    const snapshots: ComplexitySnapshot[] = [
+      { date: makeDate(2023, 1), totalFiles: 10, totalSize: 1000, churnRate: 0, commitHash: 'c1' },
+      { date: makeDate(2023, 2), totalFiles: 12, totalSize: 1200, churnRate: 0, commitHash: 'c2' },
+      { date: makeDate(2023, 3), totalFiles: 14, totalSize: 1400, churnRate: 0, commitHash: 'c3' },
+    ];
+    const runner: GitRunner = {
+      stream: vi.fn() as any,
+      exec: vi.fn(async (args: string[]) => {
+        if (args[0] === 'diff-tree' && args[3] === 'c1' && args[4] === 'c2') {
+          throw new Error('diff-tree failure');
+        }
+        if (args[0] === 'diff-tree') return 'a.ts\nb.ts\n';
+        return '';
+      }),
+    };
+
+    await computeChurnRates(snapshots, runner);
+    expect(snapshots[1].churnRate).toBe(0);
+    expect(snapshots[2].churnRate).toBeCloseTo(2 / 14);
+  });
+
+  it('handles empty snapshots array', async () => {
     const snapshots: ComplexitySnapshot[] = [];
-    computeChurnRates(snapshots);
+    await computeChurnRates(snapshots, undefined);
     expect(snapshots).toHaveLength(0);
   });
 
-  it('handles single snapshot', () => {
+  it('handles single snapshot', async () => {
     const snapshots: ComplexitySnapshot[] = [
-      { date: makeDate(2023, 1), totalFiles: 10, totalSize: 1000, churnRate: 0 },
+      { date: makeDate(2023, 1), totalFiles: 10, totalSize: 1000, churnRate: 0, commitHash: 'c1' },
     ];
-    computeChurnRates(snapshots);
+    await computeChurnRates(snapshots, undefined);
     expect(snapshots[0].churnRate).toBe(0);
   });
 });
 
+
+describe('downsampleDates', () => {
+  function range(n: number): Date[] {
+    return Array.from({ length: n }, (_, i) => new Date(Date.UTC(2024, 0, i + 1)));
+  }
+
+  it('returns input unchanged when length <= max', () => {
+    const dates = range(5);
+    expect(downsampleDates(dates, 10)).toEqual(dates);
+    expect(downsampleDates(dates, 5)).toEqual(dates);
+  });
+
+  it('preserves the first and last dates when downsampling', () => {
+    const dates = range(100);
+    const out = downsampleDates(dates, 24);
+    expect(out).toHaveLength(24);
+    expect(out[0]).toEqual(dates[0]);
+    expect(out[out.length - 1]).toEqual(dates[dates.length - 1]);
+  });
+
+  it('produces evenly spaced indices', () => {
+    const dates = range(50);
+    const out = downsampleDates(dates, 5);
+    // Math.round((i * 49) / 4) for i in 0..4 → 0, 12, 25, 37, 49
+    expect(out).toEqual([dates[0], dates[12], dates[25], dates[37], dates[49]]);
+  });
+
+  it('handles edge cases (max <= 1)', () => {
+    const dates = range(10);
+    expect(downsampleDates(dates, 0)).toEqual(dates);
+    expect(downsampleDates(dates, 1)).toEqual(dates);
+  });
+});
 
 describe('analyzeComplexityTrend', () => {
   it('uses monthly interval for >= 3 months history', async () => {

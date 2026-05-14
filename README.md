@@ -52,6 +52,7 @@ git-xray [options] [path]
 
 | Flag | Description |
 |---|---|
+| `-h`, `--help` | Show usage and exit |
 | `--since <date>` | Limit analysis to commits after this date |
 | `--until <date>` | Limit analysis to commits before this date |
 | `--branch <name>` | Analyze a specific branch (default: current branch) |
@@ -59,6 +60,7 @@ git-xray [options] [path]
 | `--output <path>` | Output path for the HTML report (default: `./<repo-name>-<date>.html`) |
 | `--follow-renames` | Track files across renames (may be slow on large repos) |
 | `--json` | Output raw analysis data as JSON alongside the HTML report |
+| `-q`, `--quiet` | Suppress the terminal summary (HTML and JSON are still written) |
 | `--no-open` | Don't auto-open the report in a browser |
 | `--no-color` | Disable colored terminal output |
 | `--author <name>` | Personal mode: show stats for a specific author |
@@ -170,13 +172,18 @@ npm test
 npm run test:watch
 ```
 
-The test suite includes 241 tests: unit tests for all modules plus 20 property-based tests using fast-check.
+The test suite includes 253 tests: unit tests for all modules plus 20 property-based tests using fast-check.
 
 ## How It Works
 
 git-xray streams raw git command output through Node.js Transform streams, keeping memory usage low even on large repositories. It runs five analysis phases sequentially — if any phase fails, it's skipped gracefully and the rest continue.
 
 All analysis is read-only. git-xray never modifies your working tree, index, or HEAD.
+
+## Author
+
+Hernan Fernandez Retamal
+https://www.linkedin.com/in/hernantech/
 
 ## License
 

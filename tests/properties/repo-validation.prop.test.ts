@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 1: Repository validation correctness
+// Feature: git-xray, Property 1: Repository validation correctness
 // For any directory path, validateRepo returns success iff `.git` directory exists.
 // **Validates: Requirements 1.1, 1.3**
 

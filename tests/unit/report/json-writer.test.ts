@@ -66,7 +66,7 @@ describe('writeJsonReport', () => {
 
   it('should write valid JSON to disk', async () => {
     const report = makeReport();
-    const outPath = join(tmpdir(), `gitpeek-test-${Date.now()}.json`);
+    const outPath = join(tmpdir(), `git-xray-test-${Date.now()}.json`);
     tempFiles.push(outPath);
 
     await writeJsonReport(report, outPath);
@@ -79,7 +79,7 @@ describe('writeJsonReport', () => {
 
   it('should use 2-space indentation', async () => {
     const report = makeReport();
-    const outPath = join(tmpdir(), `gitpeek-test-indent-${Date.now()}.json`);
+    const outPath = join(tmpdir(), `git-xray-test-indent-${Date.now()}.json`);
     tempFiles.push(outPath);
 
     await writeJsonReport(report, outPath);
@@ -96,7 +96,7 @@ describe('writeJsonReport', () => {
 
   it('should serialize Map instances as plain objects', async () => {
     const report = makeReport();
-    const outPath = join(tmpdir(), `gitpeek-test-map-${Date.now()}.json`);
+    const outPath = join(tmpdir(), `git-xray-test-map-${Date.now()}.json`);
     tempFiles.push(outPath);
 
     await writeJsonReport(report, outPath);
@@ -115,7 +115,7 @@ describe('writeJsonReport', () => {
 
   it('should preserve the full untruncated dataset', async () => {
     const report = makeReport();
-    const outPath = join(tmpdir(), `gitpeek-test-full-${Date.now()}.json`);
+    const outPath = join(tmpdir(), `git-xray-test-full-${Date.now()}.json`);
     tempFiles.push(outPath);
 
     await writeJsonReport(report, outPath);
@@ -131,7 +131,7 @@ describe('writeJsonReport', () => {
 
   it('should handle empty perDirectory Map', async () => {
     const report = makeReport([]);
-    const outPath = join(tmpdir(), `gitpeek-test-empty-map-${Date.now()}.json`);
+    const outPath = join(tmpdir(), `git-xray-test-empty-map-${Date.now()}.json`);
     tempFiles.push(outPath);
 
     await writeJsonReport(report, outPath);

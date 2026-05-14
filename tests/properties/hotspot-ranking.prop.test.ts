@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 6: Hotspot ranking correctness
+// Feature: git-xray, Property 6: Hotspot ranking correctness
 // For any set of NameStatusCommit[], the hotspot list from analyzeHotspots
 // (with followRenames=false) should be sorted non-increasing by changeCount,
 // and length = min(20, totalFiles).

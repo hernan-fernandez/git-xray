@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 8: Complexity metric computation invariant
+// Feature: git-xray, Property 8: Complexity metric computation invariant
 // For any set of ls-tree output lines, parseLsTreeOutput should return
 // totalSize = sum of blob sizes and totalFiles = count of blob entries.
 // **Validates: Requirements 4.2**

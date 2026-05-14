@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 13: Merge time computation correctness
+// Feature: git-xray, Property 13: Merge time computation correctness
 // For any set of merge records with known branch creation timestamps,
 // the computed average merge time should equal the arithmetic mean of
 // individual (merge date - branch creation date) durations.

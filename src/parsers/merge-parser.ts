@@ -1,7 +1,10 @@
 // Parses merge commit log output into merge records with parent hashes
-// Format: %H|%aI|%P|%s (pipe-delimited merge commit records)
+// Format: %H<US>%aI<US>%P<US>%s (unit-separator-delimited merge commit records).
+// Subject lines containing "|" parse correctly because U+001F cannot appear in
+// commit metadata.
 
 import { Transform, TransformCallback } from 'node:stream';
+import { FIELD_SEP } from '../git/commands.js';
 
 export interface MergeRecord {
   hash: string;
@@ -40,14 +43,16 @@ export class MergeParser extends Transform {
     const trimmed = line.trim();
     if (!trimmed) return;
 
-    const parts = trimmed.split('|');
+    const parts = trimmed.split(FIELD_SEP);
     if (parts.length < 4) return;
 
     const hash = parts[0];
     const dateStr = parts[1];
     const parentStr = parts[2];
-    // Message may contain pipes, so rejoin remaining parts
-    const message = parts.slice(3).join('|');
+    // The format guarantees exactly 4 fields, but rejoin trailing parts as a
+    // safety net in case future format changes add separators inside the
+    // subject. With U+001F this is effectively unreachable in practice.
+    const message = parts.slice(3).join(FIELD_SEP);
 
     const parentHashes = parentStr.trim() ? parentStr.trim().split(' ') : [];
 

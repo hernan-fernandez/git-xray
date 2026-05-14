@@ -1,6 +1,6 @@
 // git-xray configuration and flag parsing
 
-export interface GitPeekConfig {
+export interface GitXrayConfig {
   repoPath: string;
   repoDisplayName?: string;  // Set when cloning from URL
   branch?: string;
@@ -13,6 +13,7 @@ export interface GitPeekConfig {
   noOpen: boolean;
   noColor: boolean;
   json: boolean;
+  quiet: boolean;            // Suppress terminal report (HTML/JSON still written)
 }
 
 const KNOWN_FLAGS = new Set([
@@ -27,13 +28,22 @@ const KNOWN_FLAGS = new Set([
   '--follow-renames',
   '--author',
   '--me',
+  '--quiet',
+  '--help',
 ]);
 
-const HELP_TEXT = `Usage: git-xray [options] [path]
+/** Short-flag aliases. Mapped to their long form before lookup. */
+const SHORT_FLAG_ALIASES: Record<string, string> = {
+  '-h': '--help',
+  '-q': '--quiet',
+};
+
+export const HELP_TEXT = `Usage: git-xray [options] [path]
 
 Analyze a git repository and generate a visual stats report.
 
 Options:
+  -h, --help           Show this help message and exit
   --since <date>       Limit analysis to commits after this date
   --until <date>       Limit analysis to commits before this date
   --branch <name>      Analyze a specific branch (default: current branch)
@@ -41,6 +51,7 @@ Options:
   --output <path>      Output path for the HTML report (default: ./<repo-name>-<date>.html)
   --no-open            Don't auto-open the report in a browser
   --no-color           Disable colored terminal output
+  -q, --quiet          Suppress the terminal summary (HTML and JSON are still written)
   --json               Output raw analysis data as JSON alongside the HTML report
   --follow-renames     Track files across renames (may be slow on large repos)
   --author <name>      Personal mode: show stats for a specific author
@@ -54,17 +65,29 @@ export class ConfigError extends Error {
   }
 }
 
-export function parseConfig(argv: string[]): GitPeekConfig {
+/**
+ * Thrown by parseConfig when the user requests --help/-h. The CLI catches it,
+ * prints HELP_TEXT to stdout, and exits 0.
+ */
+export class HelpRequested extends Error {
+  constructor() {
+    super('help requested');
+    this.name = 'HelpRequested';
+  }
+}
+
+export function parseConfig(argv: string[]): GitXrayConfig {
   // Skip the first two args (node binary and script path)
   const args = argv.slice(2);
 
-  const config: GitPeekConfig = {
+  const config: GitXrayConfig = {
     repoPath: process.cwd(),
     followRenames: false,
     output: '',
     noOpen: false,
     noColor: false,
     json: false,
+    quiet: false,
   };
 
   let i = 0;
@@ -83,12 +106,19 @@ export function parseConfig(argv: string[]): GitPeekConfig {
       inlineValue = undefined;
     }
 
+    // Resolve short-flag aliases (e.g. -h → --help) before any further checks
+    if (SHORT_FLAG_ALIASES[flag]) {
+      flag = SHORT_FLAG_ALIASES[flag];
+    }
+
     if (flag.startsWith('--')) {
       if (!KNOWN_FLAGS.has(flag)) {
         throw new ConfigError(`Unknown flag: ${flag}\n\n${HELP_TEXT}`);
       }
 
       switch (flag) {
+        case '--help':
+          throw new HelpRequested();
         case '--since': {
           const value = inlineValue ?? args[++i];
           if (!value) throw new ConfigError('--since requires a date value');
@@ -131,6 +161,9 @@ export function parseConfig(argv: string[]): GitPeekConfig {
           break;
         case '--json':
           config.json = true;
+          break;
+        case '--quiet':
+          config.quiet = true;
           break;
         case '--follow-renames':
           config.followRenames = true;

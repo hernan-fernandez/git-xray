@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 19: Scope path filtering correctness
+// Feature: git-xray, Property 19: Scope path filtering correctness
 // For any scope path and set of file records, only files whose paths start
 // with the scope prefix should be included. Tests parseLsTreeOutput with a
 // scope parameter and verifies only scope-prefixed files are counted.

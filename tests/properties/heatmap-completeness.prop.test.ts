@@ -1,4 +1,4 @@
-// Feature: gitpeek, Property 3: Heatmap completeness invariant
+// Feature: git-xray, Property 3: Heatmap completeness invariant
 // For any set of CommitRecord[], the sum of all cells in the 7×24 heatmap
 // should equal the total number of commits. Each commit maps to exactly one cell.
 // **Validates: Requirements 2.2**
