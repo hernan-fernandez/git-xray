@@ -3,9 +3,9 @@
 // Graceful degradation: if a phase fails, skip it and continue with the rest.
 
 import { Readable } from 'node:stream';
-import { writeFile } from 'node:fs/promises';
-import { exec } from 'node:child_process';
-import { basename } from 'node:path';
+import { writeFile, mkdir } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
+import { basename, dirname } from 'node:path';
 
 import type { GitXrayConfig } from './config.js';
 import type { GitRunner } from './git/runner.js';
@@ -45,12 +45,20 @@ import { writeJsonReport } from './report/json-writer.js';
 import { startPhase, endPhase } from './utils/progress.js';
 
 /**
- * Collect all objects from a readable object-mode stream into an array.
+ * Pipe a source stream through a parser and collect all parsed objects.
+ *
+ * Errors on the source (e.g. GitError from a non-zero git exit) are forwarded
+ * to the parser so the async iteration rejects and the phase's try/catch can
+ * degrade gracefully — `.pipe()` alone does NOT propagate source errors, and
+ * an unhandled 'error' event would crash the process.
  */
-async function collectStream<T>(stream: Readable): Promise<T[]> {
+async function parseStream<T>(source: Readable, parser: NodeJS.ReadWriteStream): Promise<T[]> {
+  source.on('error', (err) => {
+    (parser as unknown as Readable).destroy(err as Error);
+  });
   const items: T[] = [];
-  for await (const item of stream) {
-    items.push(item as T);
+  for await (const item of source.pipe(parser) as AsyncIterable<T>) {
+    items.push(item);
   }
   return items;
 }
@@ -99,7 +107,15 @@ export function parseNameStatusOutput(raw: string): NameStatusCommit[] {
       const tabIdx = line.indexOf('\t');
       if (tabIdx !== -1) {
         const status = line.substring(0, tabIdx).trim();
-        const filePath = line.substring(tabIdx + 1).trim();
+        let filePath = line.substring(tabIdx + 1).trim();
+        // Rename/copy entries (R100, C75, ...) carry two tab-separated paths:
+        // "R100\told/path\tnew/path". Attribute the change to the new path.
+        if (/^[RC]\d*$/i.test(status)) {
+          const lastTab = filePath.lastIndexOf('\t');
+          if (lastTab !== -1) {
+            filePath = filePath.substring(lastTab + 1).trim();
+          }
+        }
         if (status && filePath) {
           current.files.push({ status, filePath });
         }
@@ -158,18 +174,27 @@ function emptyPRVelocity(): PRVelocityData {
  * Open a file in the default browser (platform-specific).
  */
 function openInBrowser(filePath: string): void {
+  // Array-form spawn (no shell) so the file path is passed as a literal
+  // argument — a path containing quotes or $(...) cannot inject commands.
   const platform = process.platform;
   let cmd: string;
+  let args: string[];
   if (platform === 'darwin') {
-    cmd = `open "${filePath}"`;
+    cmd = 'open';
+    args = [filePath];
   } else if (platform === 'win32') {
-    cmd = `start "" "${filePath}"`;
+    // `start` is a cmd.exe builtin; the empty string is the window title
+    cmd = 'cmd';
+    args = ['/c', 'start', '', filePath];
   } else {
-    cmd = `xdg-open "${filePath}"`;
+    cmd = 'xdg-open';
+    args = [filePath];
   }
-  exec(cmd, () => {
+  const child = spawn(cmd, args, { stdio: 'ignore', detached: true });
+  child.on('error', () => {
     // Ignore errors — best effort
   });
+  child.unref();
 }
 
 /**
@@ -178,9 +203,14 @@ function openInBrowser(filePath: string): void {
  * Phases run sequentially: contributions → hotspots → complexity → bus factor → PR velocity.
  * Each phase is wrapped in try/catch for graceful degradation.
  * After all phases, results are aggregated and rendered.
+ *
+ * @returns Process exit code: 0 on success (including partial degradation),
+ *          1 when every git-backed phase failed and no data was collected.
  */
-export async function runAnalysis(config: GitXrayConfig): Promise<void> {
+export async function runAnalysis(config: GitXrayConfig): Promise<number> {
   const gitRunner: GitRunner = new GitCommandRunner(config.repoPath);
+  // Git-backed phases that failed (bus factor is pure computation, excluded)
+  const failedPhases: string[] = [];
   const filters = buildFilters(config);
   const repoName = config.repoDisplayName || basename(config.repoPath);
 
@@ -231,15 +261,16 @@ export async function runAnalysis(config: GitXrayConfig): Promise<void> {
   try {
     startPhase('Analyzing contributions...');
     const logStream = gitRunner.stream(contributionLog(filters));
-    commits = await collectStream<CommitRecord>(logStream.pipe(new LogParser()));
+    commits = await parseStream<CommitRecord>(logStream, new LogParser());
 
     const numstatStream = gitRunner.stream(contributionNumstat(filters));
-    fileChanges = await collectStream<FileChangeRecord>(numstatStream.pipe(new NumstatParser()));
+    fileChanges = await parseStream<FileChangeRecord>(numstatStream, new NumstatParser());
 
     contributions = analyzeContributions(commits, fileChanges);
     endPhase();
   } catch (err) {
     endPhase();
+    failedPhases.push('contributions');
     console.warn('Warning: Contribution analysis failed, skipping.', (err as Error).message);
   }
 
@@ -280,6 +311,7 @@ export async function runAnalysis(config: GitXrayConfig): Promise<void> {
     endPhase();
   } catch (err) {
     endPhase();
+    failedPhases.push('hotspots');
     console.warn('Warning: Hotspot analysis failed, skipping.', (err as Error).message);
   }
 
@@ -324,6 +356,7 @@ export async function runAnalysis(config: GitXrayConfig): Promise<void> {
     endPhase();
   } catch (err) {
     endPhase();
+    failedPhases.push('complexity');
     console.warn('Warning: Complexity analysis failed, skipping.', (err as Error).message);
   }
 
@@ -342,7 +375,7 @@ export async function runAnalysis(config: GitXrayConfig): Promise<void> {
   try {
     startPhase('Measuring PR velocity...');
     const mergeStream = gitRunner.stream(mergeLog(filters));
-    const mergeRecords = await collectStream<MergeRecord>(mergeStream.pipe(new MergeParser()));
+    const mergeRecords = await parseStream<MergeRecord>(mergeStream, new MergeParser());
 
     const firstParentRaw = await gitRunner.exec(firstParentLog(filters));
     const mainLineHashes = new Set<string>(
@@ -356,7 +389,19 @@ export async function runAnalysis(config: GitXrayConfig): Promise<void> {
     endPhase();
   } catch (err) {
     endPhase();
+    failedPhases.push('PR velocity');
     console.warn('Warning: PR velocity analysis failed, skipping.', (err as Error).message);
+  }
+
+  // If every git-backed phase failed, there is no data to report. Fail loudly
+  // instead of writing an empty report and exiting 0, so CI can detect it.
+  const GIT_PHASE_COUNT = 4; // contributions, hotspots, complexity, PR velocity
+  if (failedPhases.length >= GIT_PHASE_COUNT) {
+    process.stderr.write(
+      'Error: all analysis phases failed — no git data could be collected.\n' +
+        'Check that the branch exists and the repository has commits.\n',
+    );
+    return 1;
   }
 
   // Determine date range for the report
@@ -426,6 +471,8 @@ export async function runAnalysis(config: GitXrayConfig): Promise<void> {
   // Render HTML report (truncated for HTML)
   const htmlData = truncateForHtml(reportData);
   const html = await renderHtmlReport(htmlData);
+  // Ensure the output directory exists (e.g. --output reports/out.html)
+  await mkdir(dirname(config.output), { recursive: true });
   await writeFile(config.output, html, 'utf-8');
 
   // Render terminal report (unless --quiet was passed)
@@ -434,9 +481,11 @@ export async function runAnalysis(config: GitXrayConfig): Promise<void> {
     process.stdout.write(terminalOutput);
   }
 
-  // Optionally write JSON
+  // Optionally write JSON. Strip a .html/.htm suffix case-insensitively and
+  // append .json, so an output path without a .html suffix can never cause
+  // the JSON to overwrite the HTML report just written.
   if (config.json) {
-    const jsonPath = config.output.replace(/\.html$/, '.json');
+    const jsonPath = config.output.replace(/\.html?$/i, '') + '.json';
     await writeJsonReport(reportData, jsonPath);
   }
 
@@ -444,4 +493,6 @@ export async function runAnalysis(config: GitXrayConfig): Promise<void> {
   if (!config.noOpen) {
     openInBrowser(config.output);
   }
+
+  return 0;
 }

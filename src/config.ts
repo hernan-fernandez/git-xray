@@ -90,6 +90,7 @@ export function parseConfig(argv: string[]): GitXrayConfig {
     quiet: false,
   };
 
+  let positionalSeen = false;
   let i = 0;
   while (i < args.length) {
     const arg = args[i];
@@ -111,6 +112,26 @@ export function parseConfig(argv: string[]): GitXrayConfig {
       flag = SHORT_FLAG_ALIASES[flag];
     }
 
+    /**
+     * Take the value for a value-taking flag. The next token is only consumed
+     * when it doesn't look like another flag, so a missing value fails fast
+     * ("--author --json") instead of silently swallowing the next flag.
+     * The --flag=value form remains an escape hatch for values that
+     * legitimately start with "-".
+     */
+    const takeValue = (flagName: string, what: string): string => {
+      if (inlineValue !== undefined) {
+        if (!inlineValue) throw new ConfigError(`${flagName} requires ${what}`);
+        return inlineValue;
+      }
+      const next = args[i + 1];
+      if (next === undefined || next === '' || next.startsWith('-')) {
+        throw new ConfigError(`${flagName} requires ${what}`);
+      }
+      i++;
+      return next;
+    };
+
     if (flag.startsWith('--')) {
       if (!KNOWN_FLAGS.has(flag)) {
         throw new ConfigError(`Unknown flag: ${flag}\n\n${HELP_TEXT}`);
@@ -120,36 +141,36 @@ export function parseConfig(argv: string[]): GitXrayConfig {
         case '--help':
           throw new HelpRequested();
         case '--since': {
-          const value = inlineValue ?? args[++i];
-          if (!value) throw new ConfigError('--since requires a date value');
+          const value = takeValue('--since', 'a date value');
           const date = new Date(value);
           if (isNaN(date.getTime())) throw new ConfigError(`Invalid date for --since: ${value}`);
           config.since = date;
           break;
         }
         case '--until': {
-          const value = inlineValue ?? args[++i];
-          if (!value) throw new ConfigError('--until requires a date value');
+          const value = takeValue('--until', 'a date value');
           const date = new Date(value);
           if (isNaN(date.getTime())) throw new ConfigError(`Invalid date for --until: ${value}`);
           config.until = date;
           break;
         }
         case '--branch': {
-          const value = inlineValue ?? args[++i];
-          if (!value) throw new ConfigError('--branch requires a branch name');
+          const value = takeValue('--branch', 'a branch name');
+          // git refs cannot start with "-"; rejecting also prevents the value
+          // from being interpreted as a git option (argument injection).
+          if (value.startsWith('-')) {
+            throw new ConfigError(`Invalid branch name: ${value}`);
+          }
           config.branch = value;
           break;
         }
         case '--scope': {
-          const value = inlineValue ?? args[++i];
-          if (!value) throw new ConfigError('--scope requires a path');
+          const value = takeValue('--scope', 'a path');
           config.scope = value;
           break;
         }
         case '--output': {
-          const value = inlineValue ?? args[++i];
-          if (!value) throw new ConfigError('--output requires a file path');
+          const value = takeValue('--output', 'a file path');
           config.output = value;
           break;
         }
@@ -169,8 +190,7 @@ export function parseConfig(argv: string[]): GitXrayConfig {
           config.followRenames = true;
           break;
         case '--author': {
-          const value = inlineValue ?? args[++i];
-          if (!value) throw new ConfigError('--author requires a name');
+          const value = takeValue('--author', 'a name');
           config.author = value;
           break;
         }
@@ -178,9 +198,18 @@ export function parseConfig(argv: string[]): GitXrayConfig {
           config.author = '__ME__'; // Resolved later from git config
           break;
       }
+    } else if (arg.startsWith('-')) {
+      // Unknown single-dash token — reject instead of silently treating it
+      // as a repo path (catches typos like "-since 2024").
+      throw new ConfigError(`Unknown flag: ${arg}\n\n${HELP_TEXT}`);
     } else {
-      // Positional argument — first one is the repo path
+      // Positional argument — the repo path. Reject extras instead of
+      // silently letting the last one win.
+      if (positionalSeen) {
+        throw new ConfigError(`Unexpected extra argument: ${arg}`);
+      }
       config.repoPath = arg;
+      positionalSeen = true;
     }
 
     i++;

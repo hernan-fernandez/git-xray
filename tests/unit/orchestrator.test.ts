@@ -23,9 +23,10 @@ vi.mock('../../src/report/json-writer.js', () => ({
   writeJsonReport: vi.fn().mockResolvedValue(undefined),
 }));
 
-// Mock fs/promises writeFile
+// Mock fs/promises writeFile + mkdir (output directory creation)
 vi.mock('node:fs/promises', () => ({
   writeFile: vi.fn().mockResolvedValue(undefined),
+  mkdir: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock child_process exec (for openInBrowser)

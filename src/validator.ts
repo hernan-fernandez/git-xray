@@ -17,28 +17,32 @@ export type ValidationResult = ValidationSuccess | ValidationFailure;
 
 /**
  * Validate that the target path is a git repository.
- * Supports both regular repos (.git subdirectory) and bare repos (HEAD file at root).
+ *
+ * Uses `git rev-parse --git-dir` as the authoritative check, which correctly
+ * handles regular repos, bare repos, worktrees, and submodules (whose .git is
+ * a file, not a directory) — and rejects directories that merely contain a
+ * stray HEAD file.
  */
 export async function validateRepo(repoPath: string): Promise<ValidationResult> {
-  // Check for regular repo (.git directory)
-  const gitDir = resolve(repoPath, '.git');
+  // Distinguish "path doesn't exist" from "exists but isn't a repo"
   try {
-    const stat = await fs.stat(gitDir);
-    if (stat.isDirectory()) return { valid: true };
+    const stat = await fs.stat(resolve(repoPath));
+    if (!stat.isDirectory()) {
+      return { valid: false, error: `Not a directory: ${repoPath}` };
+    }
   } catch {
-    // Not a regular repo, check for bare repo
+    return { valid: false, error: `Path does not exist: ${repoPath}` };
   }
 
-  // Check for bare repo (HEAD file at root)
-  const headFile = resolve(repoPath, 'HEAD');
-  try {
-    const stat = await fs.stat(headFile);
-    if (stat.isFile()) return { valid: true };
-  } catch {
-    // Not a bare repo either
-  }
-
-  return { valid: false, error: `Not a git repository: ${repoPath}` };
+  return new Promise((resolvePromise) => {
+    execFile('git', ['-C', repoPath, 'rev-parse', '--git-dir'], (error) => {
+      if (error) {
+        resolvePromise({ valid: false, error: `Not a git repository: ${repoPath}` });
+      } else {
+        resolvePromise({ valid: true });
+      }
+    });
+  });
 }
 
 /**

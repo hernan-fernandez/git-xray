@@ -3,8 +3,11 @@ import { startPhase, endPhase, updateProgress } from '../../../src/utils/progres
 
 describe('progress', () => {
   let stderrSpy: ReturnType<typeof vi.spyOn>;
+  const originalIsTTY = process.stderr.isTTY;
 
   beforeEach(() => {
+    // In-place progress updates are TTY-only behavior; simulate a terminal
+    process.stderr.isTTY = true;
     stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
   });
 
@@ -12,6 +15,7 @@ describe('progress', () => {
     // Clean up any active phase
     endPhase();
     stderrSpy.mockRestore();
+    process.stderr.isTTY = originalIsTTY;
     vi.restoreAllMocks();
   });
 
@@ -27,6 +31,15 @@ describe('progress', () => {
       startPhase('Detecting hotspots...');
       const output = stderrSpy.mock.calls[0][0] as string;
       expect(output).toMatch(/^\r/);
+    });
+
+    it('should write a plain line without control sequences when not a TTY', () => {
+      process.stderr.isTTY = false as unknown as true;
+      startPhase('Analyzing contributions...');
+      const output = stderrSpy.mock.calls[0][0] as string;
+      expect(output).toBe('Analyzing contributions...\n');
+      expect(output).not.toContain('\r');
+      expect(output).not.toContain('\x1b');
     });
   });
 

@@ -14,14 +14,19 @@ let phaseStartTime: number | null = null;
 export function startPhase(name: string): void {
   currentPhase = name;
   phaseStartTime = Date.now();
-  process.stderr.write(`\r\x1b[K${name}`);
+  if (process.stderr.isTTY) {
+    process.stderr.write(`\r\x1b[K${name}`);
+  } else {
+    // Non-TTY (CI logs, pipes): plain line per phase, no control sequences
+    process.stderr.write(`${name}\n`);
+  }
 }
 
 /**
  * End the current phase and clear the progress line.
  */
 export function endPhase(): void {
-  if (currentPhase !== null) {
+  if (currentPhase !== null && process.stderr.isTTY) {
     process.stderr.write(`\r\x1b[K`);
   }
   currentPhase = null;
@@ -51,5 +56,9 @@ export function updateProgress(message: string, progress?: number): void {
     }
   }
 
-  process.stderr.write(`\r\x1b[K${line}`);
+  // In-place updates only make sense on a TTY; stay silent otherwise to
+  // avoid flooding CI logs with incremental updates
+  if (process.stderr.isTTY) {
+    process.stderr.write(`\r\x1b[K${line}`);
+  }
 }

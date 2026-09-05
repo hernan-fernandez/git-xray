@@ -5,10 +5,12 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { createRequire } from 'node:module';
 import type { ReportData } from './aggregator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const require = createRequire(import.meta.url);
 
 const ECHARTS_PLACEHOLDER = '<!-- ECHARTS_JS -->';
 const DATA_PLACEHOLDER = '<!-- REPORT_DATA -->';
@@ -18,12 +20,20 @@ const DATA_PLACEHOLDER = '<!-- REPORT_DATA -->';
  * Handles Map instances (e.g. perDirectory) by converting them to plain objects.
  */
 function serializeReportData(data: ReportData): string {
-  return JSON.stringify(data, (_key, value) => {
+  const json = JSON.stringify(data, (_key, value) => {
     if (value instanceof Map) {
       return Object.fromEntries(value);
     }
     return value;
   });
+  // Escape sequences that could break out of the inline <script> context.
+  // "<" prevents "</script>" termination and "<!--" tricks from data values
+  // (author names, file paths, and branch names are attacker-controlled).
+  // U+2028/U+2029 are valid in JSON but illegal in JS source text.
+  return json
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 }
 
 /**
@@ -58,8 +68,9 @@ export async function renderHtmlReport(reportData: ReportData): Promise<string> 
   const templatePath = join(__dirname, 'template', 'report.html');
   const template = await readFile(templatePath, 'utf-8');
 
-  // Read the ECharts minified JS
-  const echartsPath = join(__dirname, '..', '..', 'node_modules', 'echarts', 'dist', 'echarts.min.js');
+  // Read the ECharts minified JS, resolved through Node module resolution so
+  // it works under any package-manager layout (hoisted, nested, or pnpm).
+  const echartsPath = require.resolve('echarts/dist/echarts.min.js');
   const echartsJs = await readFile(echartsPath, 'utf-8');
 
   // Build the inlined ECharts script tag
@@ -68,9 +79,11 @@ export async function renderHtmlReport(reportData: ReportData): Promise<string> 
   // Build the data injection script
   const dataScript = `window.__GIT_XRAY_DATA__ = ${serializeReportData(reportData)};`;
 
-  // Replace placeholders
-  let html = template.replace(ECHARTS_PLACEHOLDER, echartsScript);
-  html = html.replace(DATA_PLACEHOLDER, dataScript);
+  // Replace placeholders. Function form so "$"-patterns ($$, $&, $`) in the
+  // replacement content are inserted literally instead of being interpreted
+  // by String.replace (echarts.min.js contains "$$"; data strings may too).
+  let html = template.replace(ECHARTS_PLACEHOLDER, () => echartsScript);
+  html = html.replace(DATA_PLACEHOLDER, () => dataScript);
 
   // Minify the final output
   html = minifyHtml(html);

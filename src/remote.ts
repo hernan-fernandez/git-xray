@@ -42,38 +42,50 @@ export function repoNameFromUrl(url: string): string {
 export async function cloneIfUrl(input: string): Promise<CloneInfo | null> {
   if (!isGitUrl(input)) return null;
 
-  const name = repoNameFromUrl(input);
+  // Sanitize the display name for use as a temp-dir prefix (scp-style URLs
+  // like "git@host:repo" contain characters invalid in some filesystems).
+  const name = repoNameFromUrl(input).replace(/[^a-zA-Z0-9_-]/g, '-');
   const tempDir = await mkdtemp(join(tmpdir(), `git-xray-${name}-`));
+  const isTTY = process.stderr.isTTY === true;
 
   process.stderr.write(`Cloning ${input}...\n`);
 
-  await new Promise<void>((resolve, reject) => {
-    // Use --bare for speed (no working tree needed, we only read git history)
-    const child = spawn('git', ['clone', '--bare', input, tempDir], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+  try {
+    await new Promise<void>((resolve, reject) => {
+      // Use --bare for speed (no working tree needed, we only read git history)
+      const child = spawn('git', ['clone', '--bare', input, tempDir], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
 
-    let stderr = '';
-    child.stderr.on('data', (chunk: Buffer) => {
-      const msg = chunk.toString();
-      stderr += msg;
-      // Show clone progress to the user
-      process.stderr.write(`\r\x1b[K${msg.trim()}`);
-    });
+      let stderr = '';
+      child.stderr.on('data', (chunk: Buffer) => {
+        const msg = chunk.toString();
+        stderr += msg;
+        // Show clone progress: in-place updates on a TTY, plain pass-through
+        // otherwise (no control sequences in CI logs)
+        if (isTTY) {
+          process.stderr.write(`\r\x1b[K${msg.trim()}`);
+        }
+      });
 
-    child.on('close', (code) => {
-      process.stderr.write('\r\x1b[K'); // Clear progress line
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`Failed to clone ${input}: ${stderr.trim()}`));
-      }
-    });
+      child.on('close', (code) => {
+        if (isTTY) process.stderr.write('\r\x1b[K'); // Clear progress line
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`Failed to clone ${input}: ${stderr.trim()}`));
+        }
+      });
 
-    child.on('error', (err) => {
-      reject(new Error(`Failed to clone ${input}: ${err.message}`));
+      child.on('error', (err) => {
+        reject(new Error(`Failed to clone ${input}: ${err.message}`));
+      });
     });
-  });
+  } catch (err) {
+    // Don't leak the partially-populated temp directory on clone failure
+    await cleanupClone(tempDir);
+    throw err;
+  }
 
   process.stderr.write(`Cloned to temp directory. Analyzing...\n`);
 
