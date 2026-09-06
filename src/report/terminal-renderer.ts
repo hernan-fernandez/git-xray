@@ -32,14 +32,6 @@ function pad(str: string, width: number): string {
 }
 
 /**
- * Right-align a string within a fixed width.
- */
-function padLeft(str: string, width: number): string {
-  if (str.length >= width) return str.slice(0, width);
-  return ' '.repeat(width - str.length) + str;
-}
-
-/**
  * Draw a horizontal rule with box-drawing characters.
  */
 function horizontalRule(left: string, mid: string, right: string, widths: number[]): string {

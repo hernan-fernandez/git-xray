@@ -35,10 +35,10 @@ import {
 } from './analyzers/complexity.js';
 import { analyzeBusFactor, type BusFactorData } from './analyzers/bus-factor.js';
 import { analyzePRVelocity, type PRVelocityData } from './analyzers/pr-velocity.js';
-import { aggregateReport, truncateForHtml, type ReportData } from './report/aggregator.js';
-import { classifyPersonality, type RepoPersonality } from './analyzers/personality.js';
+import { aggregateReport, truncateForHtml } from './report/aggregator.js';
+import { classifyPersonality } from './analyzers/personality.js';
 import { generateSummary } from './analyzers/summary.js';
-import { analyzeCollaboration, type CollaborationData } from './analyzers/collaboration.js';
+import { analyzeCollaboration } from './analyzers/collaboration.js';
 import { renderHtmlReport } from './report/html-renderer.js';
 import { renderTerminalReport } from './report/terminal-renderer.js';
 import { writeJsonReport } from './report/json-writer.js';

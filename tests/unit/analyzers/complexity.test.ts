@@ -15,7 +15,7 @@ function makeDate(year: number, month: number, day: number = 1): Date {
   return new Date(Date.UTC(year, month - 1, day));
 }
 
-function makeMockGitRunner(
+function _makeMockGitRunner(
   revListResults: Map<string, string>,
   lsTreeResults: Map<string, string>,
 ): GitRunner {
@@ -448,7 +448,7 @@ describe('analyzeComplexityTrend', () => {
 
     const mockRunner: GitRunner = {
       stream: vi.fn() as any,
-      exec: vi.fn(async (args: string[]) => {
+      exec: vi.fn(async (_args: string[]) => {
         // rev-list returns empty — no commits at any snapshot point
         return '';
       }),

@@ -17,6 +17,7 @@ function makeReportData(overrides?: Partial<ReportData>): ReportData {
       ],
       heatmap: Array.from({ length: 7 }, () => Array(24).fill(0)),
       totalCommits: 80,
+      totalAuthors: 2,
     },
     hotspots: {
       hotspots: [

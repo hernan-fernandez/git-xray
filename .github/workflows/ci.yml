@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }}, Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Full Node range on Linux; latest Node on macOS and Windows
+          - { os: ubuntu-latest, node: '20' }
+          - { os: ubuntu-latest, node: '22' }
+          - { os: ubuntu-latest, node: '24' }
+          - { os: macos-latest, node: '24' }
+          - { os: windows-latest, node: '24' }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck (src + tests)
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test with coverage thresholds
+        run: npm run test:coverage
+
+      - name: Build
+        run: npm run build
+
+  pack-smoke:
+    # Installs the packed tarball into a clean project (hoisted node_modules
+    # layout) and runs the built CLI on Node 18 — validates the "engines"
+    # claim and the template/echarts resolution that unit tests cannot reach.
+    name: Pack smoke test (Node 18)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+          npm pack
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install tarball into a clean project and run the CLI
+        run: |
+          mkdir -p /tmp/smoke
+          cd /tmp/smoke
+          npm init -y > /dev/null
+          npm install "$GITHUB_WORKSPACE"/git-xray-*.tgz
+          npx git-xray --no-open --quiet --json --output /tmp/smoke/report.html "$GITHUB_WORKSPACE"
+          test -s /tmp/smoke/report.html
+          grep -q "__GIT_XRAY_DATA__" /tmp/smoke/report.html
+          node -e "JSON.parse(require('fs').readFileSync('/tmp/smoke/report.json','utf8')); console.log('smoke test OK')"

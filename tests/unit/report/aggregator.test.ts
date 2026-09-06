@@ -30,6 +30,7 @@ function makeInput(hotspotCount: number, authorCount: number): AggregateInput {
     authors,
     heatmap: Array.from({ length: 7 }, () => Array(24).fill(0)),
     totalCommits: authorCount * 10,
+    totalAuthors: authorCount,
   };
 
   const hotspotData: HotspotData = { hotspots };

@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 import { analyzeBusFactor } from '../../src/analyzers/bus-factor.js';
 import type { CommitRecord } from '../../src/parsers/log-parser.js';
-import type { FileChangeRecord } from '../../src/parsers/numstat-parser.js';
+
 
 // Generate commits where each author has a known number of recent commits (full weight).
 // All commits are within 12 months of the reference date so weight = 1.0.

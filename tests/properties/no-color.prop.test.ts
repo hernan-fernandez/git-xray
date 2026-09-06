@@ -57,6 +57,7 @@ const arbReportData: fc.Arbitrary<ReportData> = fc.record({
     authors: fc.array(arbAuthorSummary, { minLength: 0, maxLength: 5 }),
     heatmap: fc.constant(Array.from({ length: 7 }, () => Array(24).fill(0))),
     totalCommits: fc.integer({ min: 0, max: 500 }),
+    totalAuthors: fc.integer({ min: 0, max: 5 }),
   }),
   hotspots: fc.record({
     hotspots: fc.array(arbHotspot, { minLength: 0, maxLength: 5 }),
@@ -68,7 +69,18 @@ const arbReportData: fc.Arbitrary<ReportData> = fc.record({
   busFactor: fc.record({
     overall: arbBusFactorResult,
     perDirectory: fc.constant(new Map<string, any>()),
-    singlePointRisks: fc.array(arbFilePath, { minLength: 0, maxLength: 3 }),
+    singlePointRisks: fc.array(
+      fc.record({
+        filePath: arbFilePath,
+        soleAuthor: arbName,
+        totalChanges: fc.integer({ min: 2, max: 50 }),
+        authorPercentage: fc.integer({ min: 1, max: 100 }),
+        firstSeen: fc.constant('2024-01-01T00:00:00.000Z'),
+        lastSeen: fc.constant('2024-06-01T00:00:00.000Z'),
+        spanMonths: fc.integer({ min: 0, max: 24 }),
+      }),
+      { minLength: 0, maxLength: 3 },
+    ),
   }),
   prVelocity: fc.record({
     available: fc.boolean(),

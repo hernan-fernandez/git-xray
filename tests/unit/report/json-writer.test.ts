@@ -15,6 +15,7 @@ function makeReport(perDirEntries?: [string, BusFactorResult][]) {
     authors: [{ name: 'Alice', email: 'a@t.com', commits: 10, linesAdded: 100, linesRemoved: 20 }],
     heatmap: Array.from({ length: 7 }, () => Array(24).fill(0)),
     totalCommits: 10,
+    totalAuthors: 1,
   };
   const hotspots: HotspotData = {
     hotspots: [{ filePath: 'src/index.ts', changeCount: 5, uniqueAuthors: 1 }],

@@ -16,7 +16,7 @@ import type { FileHotspot } from '../../src/analyzers/hotspots.js';
 const arbName = fc.stringMatching(/^[A-Za-z]{2,10}$/);
 const arbEmail = fc.stringMatching(/^[a-z]{2,6}@[a-z]{2,6}\.[a-z]{2,3}$/);
 const arbFilePath = fc.stringMatching(/^[a-z]{1,6}\/[a-z]{1,6}\.[a-z]{1,3}$/);
-const arbDate = fc.date({
+const _arbDate = fc.date({
   min: new Date('2022-01-01T00:00:00Z'),
   max: new Date('2025-06-01T00:00:00Z'),
   noInvalidDate: true,
@@ -45,6 +45,7 @@ function buildReportData(hotspots: FileHotspot[], authors: AuthorSummary[]): Rep
       authors,
       heatmap: Array.from({ length: 7 }, () => Array(24).fill(0)),
       totalCommits: authors.reduce((s, a) => s + a.commits, 0),
+      totalAuthors: authors.length,
     },
     hotspots: { hotspots },
     complexity: { snapshots: [], interval: 'monthly' as const },

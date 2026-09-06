@@ -27,7 +27,7 @@ interface PersonalityInput {
  * Checks conditions in priority order — first match wins.
  */
 export function classifyPersonality(input: PersonalityInput): RepoPersonality {
-  const { contributions, busFactor, prVelocity, hotspots, complexity } = input;
+  const { contributions, busFactor, prVelocity, complexity } = input;
   const authors = contributions.authors;
   const totalCommits = contributions.totalCommits;
   const bf = busFactor.overall.busFactor;

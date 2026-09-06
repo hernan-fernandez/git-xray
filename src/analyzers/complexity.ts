@@ -7,9 +7,7 @@
 // measurement, not a proxy from file-count differences.
 
 import type { GitRunner } from '../git/runner.js';
-import type { TreeEntry } from '../parsers/ls-tree-parser.js';
 import { revListSnapshot, lsTree, diffTreeNames } from '../git/commands.js';
-import { LsTreeParser } from '../parsers/ls-tree-parser.js';
 import { pathInScope } from '../utils/path-scope.js';
 
 export interface ComplexitySnapshot {

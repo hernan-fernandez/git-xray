@@ -119,7 +119,7 @@ export async function analyzeHotspots(
   const fileMap = computeChangeFrequencies(commits, config.commitAuthors);
 
   // Build initial hotspot list sorted by change count descending
-  let hotspots: FileHotspot[] = Array.from(fileMap.entries())
+  const hotspots: FileHotspot[] = Array.from(fileMap.entries())
     .map(([filePath, data]) => ({
       filePath,
       changeCount: data.changeCount,

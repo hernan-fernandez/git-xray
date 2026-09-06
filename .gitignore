@@ -1,12 +1,18 @@
 node_modules/
 dist/
-*.html
-!docs/*.html
-*.json
-!package.json
-!package-lock.json
-!tsconfig.json
-!vitest.config.ts
+coverage/
+
+# Generated reports (<repo>-<date>.html/.json) land in the repo root.
+# Scoped to root level so templates, docs, and config files are never
+# silently ignored (src/report/template/report.html previously required a
+# force-add because of a blanket *.html rule).
+/*.html
+/*.json
+!/package.json
+!/package-lock.json
+!/tsconfig.json
+!/tsconfig.tests.json
+
 .DS_Store
 *.log
 .kiro/
