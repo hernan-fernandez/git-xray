@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.2 — 2026-09-07
+
+### Added
+
+- Author credit in the report footer ([hernan.tech](https://hernan.tech))
+
+### Fixed
+
+- The HTML self-containment property test was missing an `await` and had
+  never executed its assertions; once armed it caught a static
+  `href="https://…"` literal in the personal-mode share button, now built
+  dynamically like the main share bar. Generated reports verify clean of
+  static external `src`/`href` references
+
 ## 0.2.1 — 2026-09-07
 
 Display fixes found while testing 0.2.0 against real-world repositories.
