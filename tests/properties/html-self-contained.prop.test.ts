@@ -109,8 +109,11 @@ const arbReportData: fc.Arbitrary<ReportData> = fc.record({
 });
 
 describe('Property 15: HTML report self-containment', () => {
-  it('zero external resource references in generated HTML', () => {
-    fc.assert(
+  it('zero external resource references in generated HTML', async () => {
+    // NOTE: fc.assert on an asyncProperty returns a Promise — it MUST be
+    // awaited. Without the await this test completed before any assertion
+    // ran (and silently passed for its entire existence).
+    await fc.assert(
       fc.asyncProperty(arbReportData, async (reportData) => {
         const html = await renderHtmlReport(reportData);
 
