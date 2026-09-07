@@ -35,7 +35,7 @@ import {
 } from './analyzers/complexity.js';
 import { analyzeBusFactor, type BusFactorData } from './analyzers/bus-factor.js';
 import { analyzePRVelocity, type PRVelocityData } from './analyzers/pr-velocity.js';
-import { aggregateReport, truncateForHtml } from './report/aggregator.js';
+import { aggregateReport, truncateForHtml, truncateForTerminal } from './report/aggregator.js';
 import { classifyPersonality } from './analyzers/personality.js';
 import { generateSummary } from './analyzers/summary.js';
 import { analyzeCollaboration } from './analyzers/collaboration.js';
@@ -151,7 +151,7 @@ function emptyContributions(): ContributionData {
 }
 
 function emptyHotspots(): HotspotData {
-  return { hotspots: [] };
+  return { hotspots: [], totalFileCount: 0 };
 }
 
 function emptyComplexity(): ComplexityTrendData {
@@ -475,9 +475,10 @@ export async function runAnalysis(config: GitXrayConfig): Promise<number> {
   await mkdir(dirname(config.output), { recursive: true });
   await writeFile(config.output, html, 'utf-8');
 
-  // Render terminal report (unless --quiet was passed)
+  // Render terminal report (unless --quiet was passed), truncated to the
+  // terminal limits (20 hotspots / 10 contributors)
   if (!config.quiet) {
-    const terminalOutput = renderTerminalReport(reportData, config.noColor);
+    const terminalOutput = renderTerminalReport(truncateForTerminal(reportData), config.noColor);
     process.stdout.write(terminalOutput);
   }
 

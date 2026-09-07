@@ -88,6 +88,8 @@ describe('analyzeHotspots', () => {
     expect(result.hotspots[1].changeCount).toBe(2);
     expect(result.hotspots[2].filePath).toBe('cold.ts');
     expect(result.hotspots[2].changeCount).toBe(1);
+    // Pre-truncation total for display (renderers must not use array length)
+    expect(result.totalFileCount).toBe(3);
   });
 
   it('returns empty hotspots for empty input', async () => {
@@ -95,6 +97,7 @@ describe('analyzeHotspots', () => {
     const result = await analyzeHotspots([], config);
 
     expect(result.hotspots).toHaveLength(0);
+    expect(result.totalFileCount).toBe(0);
     expect(result.warning).toBeUndefined();
   });
 

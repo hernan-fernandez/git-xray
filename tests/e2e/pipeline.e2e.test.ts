@@ -136,6 +136,8 @@ describe('full pipeline E2E (real git)', () => {
     const data = JSON.parse(html.slice(start, end === -1 ? html.indexOf(';', start) : end));
 
     const hotspotPaths = data.hotspots.hotspots.map((h: { filePath: string }) => h.filePath);
+    // pre-truncation total present and consistent (0.2.1 display-count fix)
+    expect(data.hotspots.totalFileCount).toBeGreaterThanOrEqual(hotspotPaths.length);
     // rename attributed to the NEW path, never a tab-composite "old\tnew"
     expect(hotspotPaths).toContain('renamed-ü.ts');
     expect(hotspotPaths.some((p: string) => p.includes('\t'))).toBe(false);

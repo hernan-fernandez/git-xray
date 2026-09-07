@@ -16,6 +16,13 @@ export interface FileHotspot {
 
 export interface HotspotData {
   hotspots: FileHotspot[];
+  /**
+   * Total number of distinct changed files before any truncation. Renderers
+   * must use this (not hotspots.length) when displaying counts, because the
+   * hotspots array is capped per output context (100 HTML / 20 terminal).
+   * Optional for backward compatibility with pre-0.2.1 JSON exports.
+   */
+  totalFileCount?: number;
   warning?: string;
 }
 
@@ -162,7 +169,7 @@ export async function analyzeHotspots(
     hotspots.sort((a, b) => b.changeCount - a.changeCount);
   }
 
-  const result: HotspotData = { hotspots };
+  const result: HotspotData = { hotspots, totalFileCount: fileMap.size };
   if (warning) {
     result.warning = warning;
   }

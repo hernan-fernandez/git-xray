@@ -133,6 +133,11 @@ function renderHotspots(chalk: ChalkInstance, data: ReportData): string {
   }
 
   lines.push(horizontalRule(BOX.bottomLeft, BOX.teeUp, BOX.bottomRight, colWidths));
+
+  const totalFiles = data.hotspots.totalFileCount ?? hotspots.length;
+  if (totalFiles > hotspots.length) {
+    lines.push(`  ... and ${totalFiles - hotspots.length} more files`);
+  }
   lines.push('');
 
   return lines.join('\n');
