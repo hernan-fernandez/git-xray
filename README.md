@@ -182,8 +182,9 @@ All analysis is read-only. git-xray never modifies your working tree, index, or 
 
 ## Author
 
-Hernan Fernandez Retamal
-https://www.linkedin.com/in/hernantech/
+**Hernan Fernandez** — [hernan.tech](https://hernan.tech)
+
+[LinkedIn](https://www.linkedin.com/in/hernantech/)
 
 ## License
 
